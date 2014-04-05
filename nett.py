@@ -27,7 +27,8 @@ from common.api import onError, reprocess, fetchMinerals, fetchItems
 # System db id numbers
 systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
 # Mineral db id numbers
-mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen', 38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte'}
+mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
+              38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 
 # This will be the lists for the ui choices on the market.
 itemList = []
@@ -88,28 +89,17 @@ class MainWindow(wx.Frame):
                 if con:
                     con.close()
 
-        # Append list to selection box choice.
-        #choices = [""]
-        #for i in range(len(bpoList)):
-        #    choices.append(str(bpoList[i][1]))
-
-        #self.itemSearch = wx.ComboBox(self, wx.ID_ANY, choices=choices, style=wx.CB_DROPDOWN)
-
-        #self.marketTree = wx.TreeCtrl(self, -1, style=wx.TR_HAS_BUTTONS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
-
-        #self.itemSelector = wx.ComboBox(self, wx.ID_ANY, choices=[], style=wx.CB_DROPDOWN)
-        #self.fetchButton = wx.Button(self, wx.ID_ANY, ("Fetch Data"))
-        #self.addButton = wx.Button(self, wx.ID_ANY, ("Add"))
-
         self.leftNotebook = wx.Notebook(self, wx.ID_ANY, style=0)
         self.marketNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
         self.searchTextCtrl = wx.TextCtrl(self.marketNotebookPane, wx.ID_ANY, "")
-        self.searchButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Search"))
+        self.searchButton = wx.Button(self.marketNotebookPane, wx.ID_FIND, (""))
         self.marketTree = wx.TreeCtrl(self.marketNotebookPane, wx.ID_ANY, style=wx.TR_HAS_BUTTONS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
         self.addButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Add to Quickbar"))
         self.fetchButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Fetch Data"))
-        self.notebook_1_pane_2 = wx.Panel(self.leftNotebook, wx.ID_ANY)
-        self.quickbarListCtrl = wx.ListCtrl(self.notebook_1_pane_2, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
+        self.quickbarNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
+        self.quickbarListCtrl = wx.ListCtrl(self.quickbarNotebookPane, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
+        self.removeButton = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Remove From Quickbar"))
+        self.fetchButtonTwo = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Fetch Data"))
 
         self.rightPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
 
@@ -145,29 +135,34 @@ class MainWindow(wx.Frame):
         self.rightPanel.SetScrollRate(10, 10)
         self.SetBackgroundColour(wx.NullColour)  # Use system default colour
 
-        self.statusbar.SetStatusText('Welcome to Nema')
+        self.statusbar.SetStatusText('Welcome to Nett')
 
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.itemsSizer = wx.BoxSizer(wx.VERTICAL)
         quickbarSizer = wx.BoxSizer(wx.VERTICAL)
         mainMarketSizer = wx.BoxSizer(wx.VERTICAL)
+
         searchSizer = wx.BoxSizer(wx.HORIZONTAL)
         searchSizer.Add(self.searchTextCtrl, 1, wx.EXPAND, 0)
         searchSizer.Add(self.searchButton, 0, wx.ADJUST_MINSIZE, 0)
-        buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-        buttonSizer.Add(self.addButton, 0, wx.ADJUST_MINSIZE, 0)
-        buttonSizer.Add(self.fetchButton, 0, wx.ADJUST_MINSIZE, 0)
-
+        marketButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        marketButtonSizer.Add(self.addButton, 1, wx.ADJUST_MINSIZE, 0)
+        marketButtonSizer.Add(self.fetchButton, 1, wx.ADJUST_MINSIZE, 0)
         mainMarketSizer.Add(searchSizer, 0, wx.EXPAND, 0)
         mainMarketSizer.Add(self.marketTree, 2, wx.EXPAND, 0)
-        mainMarketSizer.Add(buttonSizer, 0, wx.EXPAND, 0)
-
+        mainMarketSizer.Add(marketButtonSizer, 0, wx.EXPAND, 0)
         self.marketNotebookPane.SetSizer(mainMarketSizer)
+
+        quickbarButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        quickbarButtonSizer.Add(self.removeButton, 1, wx.ADJUST_MINSIZE, 0)
+        quickbarButtonSizer.Add(self.fetchButtonTwo, 1, wx.ADJUST_MINSIZE, 0)
         quickbarSizer.Add(self.quickbarListCtrl, 1, wx.EXPAND, 0)
-        self.notebook_1_pane_2.SetSizer(quickbarSizer)
+        quickbarSizer.Add(quickbarButtonSizer, 0, wx.EXPAND, 0)
+        self.quickbarNotebookPane.SetSizer(quickbarSizer)
+
         self.leftNotebook.AddPage(self.marketNotebookPane, ("Market"))
-        self.leftNotebook.AddPage(self.notebook_1_pane_2, ("Quickbar"))
+        self.leftNotebook.AddPage(self.quickbarNotebookPane, ("Quickbar"))
         mainSizer.Add(self.leftNotebook, 1, wx.EXPAND, 0)
 
         self.rightPanel.SetSizer(self.itemsSizer)
@@ -319,17 +314,17 @@ class MainWindow(wx.Frame):
         reproJitaBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaBuy_%s" % moduleID)
 
         moduleSizer_1.Add(itemLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemMarketLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemAmarrLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemDodiLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemHekLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemJitaLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemSellLabel_1, 0, wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemMarketLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemAmarrLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemDodiLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemHekLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemJitaLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemSellLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemAmarrSell_1, 0, wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemDodiSell_1, 0, wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemHekSell_1, 0, wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemJitaSell_1, 0, wx.ADJUST_MINSIZE, 0)
-        itemGrid_1.Add(itemBuyLabel_1, 0, wx.ADJUST_MINSIZE, 0)
+        itemGrid_1.Add(itemBuyLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemAmarrBuy_1, 0, wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemDodiBuy_1, 0, wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemHekBuy_1, 0, wx.ADJUST_MINSIZE, 0)
@@ -339,17 +334,17 @@ class MainWindow(wx.Frame):
         moduleSizer_1.Add(static_line_1, 0, wx.EXPAND, 0)
 
         moduleSizer_1.Add(reproLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproMarketLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproAmarrLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproDodiLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproHekLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproJitaLabel_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproSellLabel_1, 0, wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproMarketLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproAmarrLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproDodiLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproHekLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproJitaLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproSellLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproAmarrSell_1, 0, wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproDodiSell_1, 0, wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproHekSell_1, 0, wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproJitaSell_1, 0, wx.ADJUST_MINSIZE, 0)
-        reproGrid_1.Add(reproBuyLabel_1, 0, wx.ADJUST_MINSIZE, 0)
+        reproGrid_1.Add(reproBuyLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproAmarrBuy_1, 0, wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproDodiBuy_1, 0, wx.ADJUST_MINSIZE, 0)
         reproGrid_1.Add(reproHekBuy_1, 0, wx.ADJUST_MINSIZE, 0)
@@ -391,15 +386,13 @@ class MainWindow(wx.Frame):
                 idList.append(item)
 
             #idList = [4473, 16437...]
+            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
+
             dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
 
             for item in typeNames:
-                #output = reprocess(16437)
                 output = reprocess(int(item))
-                #print(typeNames[item])
-                #print('%s (%s)\nDodixie: Buy: %s / Sell: %s\nJita: Buy: %s / Sell: %s\nAmarr: Buy: %s / Sell: %s\nHek: Buy: %s / Sell: %s' %
-                #      (typeNames[item], int(item), dodixieItemBuy[item], dodixieItemSell[item],
-                #        jitaItemBuy[item], jitaItemSell[item], amarrItemBuy[item], amarrItemSell[item], hekItemBuy[item], hekItemSell[item]))
+                print(output)
 
                 dodixieBuyTotal = 0  # Fullfilling Buy orders
                 dodixieSellTotal = 0  # Placing Sell orders
@@ -420,48 +413,51 @@ class MainWindow(wx.Frame):
                         amarrSellTotal = amarrSellTotal + (int(output[key]) * amarrMineralSell[key])
                         hekBuyTotal = hekBuyTotal + (int(output[key]) * hekMineralBuy[key])
                         hekSellTotal = hekSellTotal + (int(output[key]) * hekMineralSell[key])
-                #print('Reprocessed (Perfect):\nDodixie: Buy: %s / Sell: %s\nJita: Buy: %s / Sell: %s\nAmarr: Buy: %s / Sell: %s\nHek: Buy: %s / Sell: %s\n' %
-                #      (dodixieBuyTotal, dodixieSellTotal, jitaBuyTotal, jitaSellTotal, amarrBuyTotal, amarrSellTotal, hekBuyTotal, hekSellTotal))
 
                 self.onAddWidget(int(item), typeNames[item])
 
+                # Send Values to the GUI elements. as we have added to the wx widgets
+                # on the fly the easiest way to identify the widgets is by their unique
+                # names assigned on creation.
+                # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
+
                 # Item Values
                 amarrBuy = wx.FindWindowByName("itemAmarrBuy_%s" % int(item))
-                amarrBuy.SetValue(str(amarrItemBuy[item]))
+                amarrBuy.SetValue('{:,.2f}'.format(amarrItemBuy[item]))
                 dodiBuy = wx.FindWindowByName("itemDodiBuy_%s" % int(item))
-                dodiBuy.SetValue(str(dodixieItemBuy[item]))
+                dodiBuy.SetValue('{:,.2f}'.format(dodixieItemBuy[item]))
                 hekBuy = wx.FindWindowByName("itemHekBuy_%s" % int(item))
-                hekBuy.SetValue(str(hekItemBuy[item]))
+                hekBuy.SetValue('{:,.2f}'.format(hekItemBuy[item]))
                 jitBuy = wx.FindWindowByName("itemJitaBuy_%s" % int(item))
-                jitBuy.SetValue(str(jitaItemBuy[item]))
+                jitBuy.SetValue('{:,.2f}'.format(jitaItemBuy[item]))
 
                 amarrSell = wx.FindWindowByName("itemAmarrSell_%s" % int(item))
-                amarrSell.SetValue(str(amarrItemSell[item]))
+                amarrSell.SetValue('{:,.2f}'.format(amarrItemSell[item]))
                 dodiSell = wx.FindWindowByName("itemDodiSell_%s" % int(item))
-                dodiSell.SetValue(str(dodixieItemSell[item]))
+                dodiSell.SetValue('{:,.2f}'.format(dodixieItemSell[item]))
                 hekSell = wx.FindWindowByName("itemHekSell_%s" % int(item))
-                hekSell.SetValue(str(hekItemSell[item]))
+                hekSell.SetValue('{:,.2f}'.format(hekItemSell[item]))
                 jitSell = wx.FindWindowByName("itemJitaSell_%s" % int(item))
-                jitSell.SetValue(str(jitaItemSell[item]))
+                jitSell.SetValue('{:,.2f}'.format(jitaItemSell[item]))
 
                 # Reprocess Values
                 amarrBuy = wx.FindWindowByName("reproAmarrBuy_%s" % int(item))
-                amarrBuy.SetValue(str(amarrBuyTotal))
+                amarrBuy.SetValue('{:,.2f}'.format(amarrBuyTotal))
                 dodiBuy = wx.FindWindowByName("reproDodiBuy_%s" % int(item))
-                dodiBuy.SetValue(str(dodixieBuyTotal))
+                dodiBuy.SetValue('{:,.2f}'.format(dodixieBuyTotal))
                 hekBuy = wx.FindWindowByName("reproHekBuy_%s" % int(item))
-                hekBuy.SetValue(str(hekBuyTotal))
+                hekBuy.SetValue('{:,.2f}'.format(hekBuyTotal))
                 jitBuy = wx.FindWindowByName("reproJitaBuy_%s" % int(item))
-                jitBuy.SetValue(str(jitaBuyTotal))
+                jitBuy.SetValue('{:,.2f}'.format(jitaBuyTotal))
 
                 amarrSell = wx.FindWindowByName("reproAmarrSell_%s" % int(item))
-                amarrSell.SetValue(str(amarrSellTotal))
+                amarrSell.SetValue('{:,.2f}'.format(amarrSellTotal))
                 dodiSell = wx.FindWindowByName("reproDodiSell_%s" % int(item))
-                dodiSell.SetValue(str(dodixieSellTotal))
+                dodiSell.SetValue('{:,.2f}'.format(dodixieSellTotal))
                 hekSell = wx.FindWindowByName("reproHekSell_%s" % int(item))
-                hekSell.SetValue(str(hekSellTotal))
+                hekSell.SetValue('{:,.2f}'.format(hekSellTotal))
                 jitSell = wx.FindWindowByName("reproJitaSell_%s" % int(item))
-                jitSell.SetValue(str(jitaSellTotal))
+                jitSell.SetValue('{:,.2f}'.format(jitaSellTotal))
 
     def OnAbout(self, e):
         description = """A tool designed for our corporate industrialists to
