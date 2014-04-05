@@ -19,12 +19,13 @@
 # Created: 01/04/14
 
 import wx
-import urllib2
-import httplib
 import traceback
+import requests
 
 import sqlite3 as lite
 import xml.etree.ElementTree as etree
+
+import config
 
 # System db id numbers
 systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
@@ -80,7 +81,17 @@ def reprocess(itemID):  # Takes a list of IDs to query the local db or api serve
     return minerals
 
 
-def fetchMinerals():
+def fetchItems(typeIDs):
+    # Set the market prices from Eve Central will look like:
+    # dodixieItemBuy = {3616: 26966195.29, 4473: 11158.6}
+    dodixieItemBuy = {}
+    dodixieItemSell = {}
+    jitaItemBuy = {}
+    jitaItemSell = {}
+    hekItemBuy = {}
+    hekItemSell = {}
+    amarrItemBuy = {}
+    amarrItemSell = {}
     # Set the market prices from Eve Central will look like:
     # dodixieMineralBuy = {34: 4.65, 35: 11.14, 36: 43.82, 37: 120.03, 38: 706.93, 39: 727.19, 40: 1592.10}
     dodixieMineralBuy = {}
@@ -92,114 +103,82 @@ def fetchMinerals():
     amarrMineralBuy = {}
     amarrMineralSell = {}
 
-    for system in systemNames:
-        # All base minerals from each system url:
-        # http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&usesystem=30002659
-        apiURL = 'http://api.eve-central.com/api/marketstat?typeid=34&typeid=35&typeid=36&typeid=37&typeid=38&typeid=39&typeid=40&usesystem=%s' % (system)
+    if typeIDs != []:
+        # Calculate the number of ids we have. We'll use a maximum of 100 IDs per query.
+        # So we'll need to split this into multiple queries.
+        numIDs = len(typeIDs)
+        idList = []
 
-        try:  # Try to connect to the API server
-            target = urllib2.urlopen(apiURL)  # download the file
-            downloadedData = target.read()  # convert to string
-            target.close()  # close file because we don't need it anymore
+        if numIDs > 100:
+            startID = 0
+            endID = 100
+            while startID < numIDs:
+                idList.append("&typeid=".join(map(str, typeIDs[startID:endID])))
+                startID = startID + 100
+                if ((numIDs - endID)) > 100:
+                    endID = endID + 100
+                else:
+                    endID = numIDs
 
-            tree = etree.fromstring(downloadedData)
+        else:
+            idList.append("&typeid=".join(map(str, typeIDs[0:numIDs])))
 
-            types = tree.findall('.//type')
+        numIdLists = list(range(len(idList)))
+        for x in numIdLists:  # Iterate over all of the id lists generated above.
+            for system in systemNames:
+                # Item prices by system url:
+                baseUrl = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=%s'
+                apiURL = baseUrl % (idList[x], system)
+                #print(apiURL)
 
-            for child in types:
-                ids = child.attrib
-                buy = child.find('buy')
-                sell = child.find('sell')
-                if int(ids['id']) in mineralIDs:
-                    #print('%s (%s): Buy: %s / Sell: %s' % (mineralIDs[int(ids['id'])], int(ids['id']), buy.find('max').text, sell.find('min').text))
-                    if system == 30002659:  # Dodi
-                        dodixieMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                        dodixieMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                    elif system == 30000142:  # Jita
-                        jitaMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                        jitaMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                    elif system == 30002053:  # Hek
-                        hekMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                        hekMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                    elif system == 30002187:  # Amarr
-                        amarrMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                        amarrMineralSell[int(ids['id'])] = float(sell.find('min').text)
-        except urllib2.HTTPError as err:
-            error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
-            onError(error)
-        except urllib2.URLError as err:
-            error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
-            onError(error)
-        except httplib.HTTPException as err:
-            error = ('HTTP Exception')  # Error String
-            onError(error)
-        except Exception:
-            error = ('Generic Exception: ' + traceback.format_exc())  # Error String
-            onError(error)
+                try:  # Try to connect to the API server
+                    downloadedData = requests.get(apiURL, headers=config.headers)
 
-    return dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell
+                    tree = etree.fromstring(downloadedData.text)
+                    types = tree.findall('.//type')
 
+                    for child in types:
+                        ids = child.attrib
+                        buy = child.find('buy')
+                        sell = child.find('sell')
+                        if int(ids['id']) in mineralIDs:  # Match vs mineralIDs first as all are in the typeIDs list now.
+                            if system == 30002659:  # Dodi
+                                dodixieMineralBuy[int(ids['id'])] = float(buy.find('max').text)
+                                dodixieMineralSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30000142:  # Jita
+                                jitaMineralBuy[int(ids['id'])] = float(buy.find('max').text)
+                                jitaMineralSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30002053:  # Hek
+                                hekMineralBuy[int(ids['id'])] = float(buy.find('max').text)
+                                hekMineralSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30002187:  # Amarr
+                                amarrMineralBuy[int(ids['id'])] = float(buy.find('max').text)
+                                amarrMineralSell[int(ids['id'])] = float(sell.find('min').text)
+                        elif int(ids['id']) in typeIDs:  # Catch the rest of the ids in the typeIDs list.
+                            if system == 30002659:  # Dodi
+                                dodixieItemBuy[int(ids['id'])] = float(buy.find('max').text)
+                                dodixieItemSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30000142:  # Jita
+                                jitaItemBuy[int(ids['id'])] = float(buy.find('max').text)
+                                jitaItemSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30002053:  # Hek
+                                hekItemBuy[int(ids['id'])] = float(buy.find('max').text)
+                                hekItemSell[int(ids['id'])] = float(sell.find('min').text)
+                            elif system == 30002187:  # Amarr
+                                amarrItemBuy[int(ids['id'])] = float(buy.find('max').text)
+                                amarrItemSell[int(ids['id'])] = float(sell.find('min').text)
 
-def fetchItems(idList):
-    # Set the market prices from Eve Central will look like:
-    # dodixieItemBuy = {3616: 26966195.29, 4473: 11158.6}
-    dodixieItemBuy = {}
-    dodixieItemSell = {}
-    jitaItemBuy = {}
-    jitaItemSell = {}
-    hekItemBuy = {}
-    hekItemSell = {}
-    amarrItemBuy = {}
-    amarrItemSell = {}
+                except requests.exceptions.HTTPError as err:  # An HTTP error occurred.
+                    error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
+                    onError(error)
+                except requests.exceptions.ConnectionError as err:  # A Connection error occurred.
+                    error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
+                    onError(error)
+                except requests.exceptions.RequestException as err:  # There was an ambiguous exception that occurred while handling your request.
+                    error = ('HTTP Exception')  # Error String
+                    onError(error)
+                except Exception:
+                    error = ('Generic Exception: ' + traceback.format_exc())  # Error String
+                    onError(error)
 
-    if idList != []:
-        idString = ("&typeid=".join(map(str, idList[:])))
-        for system in systemNames:
-            # Item prices by system url:
-            # http://api.eve-central.com/api/marketstat?typeid=16437&typeid=4473&usesystem=30002659
-            apiURL = 'http://api.eve-central.com/api/marketstat?typeid=16437&typeid=%s&usesystem=%s' % (idString, system)
-            print(apiURL)
-
-            try:  # Try to connect to the API server
-                target = urllib2.urlopen(apiURL)  # download the file
-                downloadedData = target.read()  # convert to string
-                target.close()  # close file because we don't need it anymore
-
-                tree = etree.fromstring(downloadedData)
-
-                #print("Item Prices from %s" % systemNames[system])
-
-                types = tree.findall('.//type')
-
-                for child in types:
-                    ids = child.attrib
-                    buy = child.find('buy')
-                    sell = child.find('sell')
-                    if int(ids['id']) in idList:
-                        #print('%s (%s): Buy: %s / Sell: %s' % (typeNames[int(ids['id'])], int(ids['id']), buy.find('max').text, sell.find('min').text))
-                        if system == 30002659:  # Dodi
-                            dodixieItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                            dodixieItemSell[int(ids['id'])] = float(sell.find('min').text)
-                        elif system == 30000142:  # Jita
-                            jitaItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                            jitaItemSell[int(ids['id'])] = float(sell.find('min').text)
-                        elif system == 30002053:  # Hek
-                            hekItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                            hekItemSell[int(ids['id'])] = float(sell.find('min').text)
-                        elif system == 30002187:  # Amarr
-                            amarrItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                            amarrItemSell[int(ids['id'])] = float(sell.find('min').text)
-            except urllib2.HTTPError as err:
-                error = ('HTTP Error: %s %s' % (str(err.code), str(err.reason)))  # Error String
-                onError(error)
-            except urllib2.URLError as err:
-                error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
-                onError(error)
-            except httplib.HTTPException as err:
-                error = ('HTTP Exception')  # Error String
-                onError(error)
-            except Exception:
-                error = ('Generic Exception: ' + traceback.format_exc())  # Error String
-                onError(error)
-
-    return dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell
+    return dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell

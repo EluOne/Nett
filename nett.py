@@ -22,7 +22,7 @@ import wx
 import sqlite3 as lite
 
 import config
-from common.api import onError, reprocess, fetchMinerals, fetchItems
+from common.api import onError, reprocess, fetchItems
 
 # System db id numbers
 systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
@@ -271,7 +271,7 @@ class MainWindow(wx.Frame):
         '''onAddWidget will add widgets into the right scrolling
         panel as required to show the number of items prices'''
         # Lets try add to the right panel.
-        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)))
+        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)), name="module_%s" % moduleID)
         self.moduleSizer_1_staticbox.Lower()
         moduleSizer_1 = wx.StaticBoxSizer(self.moduleSizer_1_staticbox, wx.VERTICAL)
         reproGrid_1 = wx.GridSizer(3, 5, 0, 0)
@@ -369,8 +369,20 @@ class MainWindow(wx.Frame):
 
     # Start of process() function
     def onProcess(self, event):
+        # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
         if typeNames != {}:
-            dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell = fetchMinerals()
+            # Build a list of item ids to send to Eve-Central.
+            idList = []
+            for item in typeNames:
+                idList.append(item)
+            # We'll tag on the mineral query with the item ids to save traffic.
+            for mineral in mineralIDs:
+                idList.append(mineral)
+
+            #idList = [4473, 16437...]
+            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
+
+            dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
 
             print("Mineral Prices by System\n")
 
@@ -380,15 +392,6 @@ class MainWindow(wx.Frame):
                                                                                              jitaMineralBuy[mineral], jitaMineralSell[mineral],
                                                                                              amarrMineralBuy[mineral], amarrMineralSell[mineral],
                                                                                              hekMineralBuy[mineral], hekMineralSell[mineral]))
-
-            idList = []
-            for item in typeNames:
-                idList.append(item)
-
-            #idList = [4473, 16437...]
-            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
-
-            dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
 
             for item in typeNames:
                 output = reprocess(int(item))
@@ -414,7 +417,10 @@ class MainWindow(wx.Frame):
                         hekBuyTotal = hekBuyTotal + (int(output[key]) * hekMineralBuy[key])
                         hekSellTotal = hekSellTotal + (int(output[key]) * hekMineralSell[key])
 
-                self.onAddWidget(int(item), typeNames[item])
+                if wx.FindWindowByName("module_%s" % int(item)):
+                    continue
+                else:
+                    self.onAddWidget(int(item), typeNames[item])
 
                 # Send Values to the GUI elements. as we have added to the wx widgets
                 # on the fly the easiest way to identify the widgets is by their unique
@@ -458,6 +464,8 @@ class MainWindow(wx.Frame):
                 hekSell.SetValue('{:,.2f}'.format(hekSellTotal))
                 jitSell = wx.FindWindowByName("reproJitaSell_%s" % int(item))
                 jitSell.SetValue('{:,.2f}'.format(jitaSellTotal))
+
+            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Idle')
 
     def OnAbout(self, e):
         description = """A tool designed for our corporate industrialists to
