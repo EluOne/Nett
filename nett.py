@@ -24,6 +24,8 @@ import sqlite3 as lite
 import config
 from common.api import onError, reprocess, fetchItems
 
+from ObjectListView import ObjectListView, ColumnDefn, GroupListView
+
 # System db id numbers
 systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
 # Mineral db id numbers
@@ -103,7 +105,7 @@ class MainWindow(wx.Frame):
         self.fetchButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Fetch Data"))
 
         self.quickbarNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
-        self.quickbarListCtrl = wx.ListCtrl(self.quickbarNotebookPane, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
+        self.quickbarListCtrl = ObjectListView(self.quickbarNotebookPane, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         self.removeButton = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Remove From Quickbar"))
         self.fetchButtonTwo = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Fetch Data"))
 
@@ -147,6 +149,12 @@ class MainWindow(wx.Frame):
         self.SetBackgroundColour(wx.NullColour)  # Use system default colour
 
         self.statusbar.SetStatusText('Welcome to Nett')
+
+        self.quickbarListCtrl.SetEmptyListMsg('Add some items\nto start')
+
+        self.quickbarListCtrl.SetColumns([
+            ColumnDefn('Name', 'left', -1, 'itemName'),
+        ])
 
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -369,12 +377,17 @@ class MainWindow(wx.Frame):
         currentSelection = self.marketTree.GetSelection()
         pydata = self.marketTree.GetPyData(currentSelection)
 
-        # Check its an item not a group
+        # Check its an item not a market group
         if pydata[2] == True:
             selectedID = pydata[0]
             for item in itemList:
+                # Find the selected ID in the complete item list
                 if item.itemID == selectedID:
-                    quickbarList.append(item)
+                    # Check for duplicates in the quickbar list
+                    if item not in quickbarList:
+                        quickbarList.append(item)
+
+        self.quickbarListCtrl.SetObjects(quickbarList)
 
     # Start of process() function
     def onProcess(self, event):
