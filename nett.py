@@ -34,19 +34,28 @@ mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
 
 # This will be the lists for the ui choices on the market.
 quickbarList = []
+materialsList = []
 itemList = []
 marketGroups = {}
 marketRelations = {}
 numIDs = 0
-# This will be the list shown in the Quickbar
-typeNames = {}
 
 
+# This is the class where we will store item data from the database and Eve-Central queries.
 class Item(object):
     def __init__(self, itemID, itemName, marketGroupID):
         self.itemID = itemID
         self.itemName = itemName
         self.marketGroupID = marketGroupID
+
+
+# This is the class where we will store material data from the database and Eve-Central queries.
+# I have decided to use the name Material instead of Minerals as the upcoming changes to reprocessing
+# will affect the returned outcome to include recyclable parts.
+class Material(object):
+    def __init__(self, materialID, materialName):
+        self.materialID = materialID
+        self.materialName = materialName
 
 
 class MainWindow(wx.Frame):
@@ -55,7 +64,7 @@ class MainWindow(wx.Frame):
         wx.Frame.__init__(self, *args, **kwds)
 
         # List and Dictionary initialisation.
-        if itemList == []:  # Build a list of all blueprints and facilities from the static data dump.
+        if itemList == []:  # Build a list of all items from the static data dump.
             try:
                 con = lite.connect('sqlite-latest.sqlite')
                 con.text_factory = str
@@ -109,7 +118,8 @@ class MainWindow(wx.Frame):
         self.removeButton = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Remove From Quickbar"))
         self.fetchButtonTwo = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Fetch Data"))
 
-        self.mineralsNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
+        self.materiallsNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
+        self.materialsListCtrl = GroupListView(self.materiallsNotebookPane, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
 
         self.rightPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
 
@@ -156,9 +166,16 @@ class MainWindow(wx.Frame):
             ColumnDefn('Name', 'left', -1, 'itemName'),
         ])
 
+        self.materialsListCtrl.SetColumns([
+            ColumnDefn('Name', 'left', -1, 'materialName'),
+            ColumnDefn('Buy', 'right', -1, 'materialBuy'),
+            ColumnDefn('Sell', 'right', -1, 'materialSell'),
+        ])
+
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.itemsSizer = wx.BoxSizer(wx.VERTICAL)
+        materialSizer = wx.BoxSizer(wx.VERTICAL)
         quickbarSizer = wx.BoxSizer(wx.VERTICAL)
         mainMarketSizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -180,9 +197,12 @@ class MainWindow(wx.Frame):
         quickbarSizer.Add(quickbarButtonSizer, 0, wx.EXPAND, 0)
         self.quickbarNotebookPane.SetSizer(quickbarSizer)
 
+        materialSizer.Add(self.materialsListCtrl, 1, wx.EXPAND, 0)
+        self.materiallsNotebookPane.SetSizer(materialSizer)
+
         self.leftNotebook.AddPage(self.marketNotebookPane, ("Market"))
         self.leftNotebook.AddPage(self.quickbarNotebookPane, ("Quickbar"))
-        self.leftNotebook.AddPage(self.mineralsNotebookPane, ("Minerals"))
+        self.leftNotebook.AddPage(self.materiallsNotebookPane, ("Minerals"))
         mainSizer.Add(self.leftNotebook, 1, wx.EXPAND, 0)
 
         self.rightPanel.SetSizer(self.itemsSizer)
