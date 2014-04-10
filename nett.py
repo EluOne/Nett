@@ -143,8 +143,12 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, self.menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, self.menuAbout)
 
+        # Button Events
         self.Bind(wx.EVT_BUTTON, self.onProcess, self.fetchButton)
+        self.Bind(wx.EVT_BUTTON, self.onProcess, self.fetchButtonTwo)
+
         self.Bind(wx.EVT_BUTTON, self.onAdd, self.addButton)
+        self.Bind(wx.EVT_BUTTON, self.onRemove, self.removeButton)
 
         # register the self.onExpand function to be called
         wx.EVT_TREE_ITEM_EXPANDING(self.marketTree, self.marketTree.GetId(), self.onExpand)
@@ -406,6 +410,21 @@ class MainWindow(wx.Frame):
                     # Check for duplicates in the quickbar list
                     if item not in quickbarList:
                         quickbarList.append(item)
+
+        self.quickbarListCtrl.SetObjects(quickbarList)
+
+    def onRemove(self, event):
+        numItemRows = list(range(len(quickbarList)))
+
+        # Get current selection from quickbarList ctrl
+        for x in self.quickbarListCtrl.GetSelectedObjects():
+            for y in numItemRows:
+                if (x.itemID == quickbarList[y].itemID):
+                    quickbarList[y] = 'deleted'
+
+            for z in quickbarList[:]:
+                if z == 'deleted':
+                    quickbarList.remove(z)
 
         self.quickbarListCtrl.SetObjects(quickbarList)
 
