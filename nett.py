@@ -31,12 +31,20 @@ mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
               38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 
 # This will be the lists for the ui choices on the market.
+quickbarList = []
 itemList = []
 marketGroups = {}
 marketRelations = {}
 numIDs = 0
 # This will be the list shown in the Quickbar
 typeNames = {}
+
+
+class Item(object):
+    def __init__(self, itemID, itemName, marketGroupID):
+        self.itemID = itemID
+        self.itemName = itemName
+        self.marketGroupID = marketGroupID
 
 
 class MainWindow(wx.Frame):
@@ -58,8 +66,7 @@ class MainWindow(wx.Frame):
                     rows = cur.fetchall()
 
                     for row in rows:
-                        # typeID, typeName
-                        itemList.append([int(row[0]), str(row[1]), int(row[2])])
+                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2])))
 
                     groupStatement = "SELECT marketGroupID, marketGroupName FROM invMarketGroups WHERE marketGroupID >= 0 ORDER BY marketGroupID;"
                     cur.execute(groupStatement)
@@ -67,7 +74,6 @@ class MainWindow(wx.Frame):
                     groupRows = cur.fetchall()
 
                     for row in groupRows:
-                        # typeID, typeName
                         marketGroups.update({int(row[0]): str(row[1])})
 
                     relationStatement = "SELECT marketGroupID, parentGroupID FROM invMarketGroups ORDER BY parentGroupID;"
@@ -76,7 +82,6 @@ class MainWindow(wx.Frame):
                     relationRows = cur.fetchall()
 
                     for row in relationRows:
-                        # typeID, typeName
                         if row[1]:
                             marketRelations.update({int(row[0]): int(row[1])})
                         else:
@@ -96,10 +101,13 @@ class MainWindow(wx.Frame):
         self.marketTree = wx.TreeCtrl(self.marketNotebookPane, wx.ID_ANY, style=wx.TR_HAS_BUTTONS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
         self.addButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Add to Quickbar"))
         self.fetchButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Fetch Data"))
+
         self.quickbarNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
         self.quickbarListCtrl = wx.ListCtrl(self.quickbarNotebookPane, wx.ID_ANY, style=wx.LC_REPORT | wx.SUNKEN_BORDER)
         self.removeButton = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Remove From Quickbar"))
         self.fetchButtonTwo = wx.Button(self.quickbarNotebookPane, wx.ID_ANY, ("Fetch Data"))
+
+        self.mineralsNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
 
         self.rightPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
 
@@ -125,6 +133,9 @@ class MainWindow(wx.Frame):
 
         self.Bind(wx.EVT_BUTTON, self.onProcess, self.fetchButton)
         self.Bind(wx.EVT_BUTTON, self.onAdd, self.addButton)
+
+        # register the self.onExpand function to be called
+        wx.EVT_TREE_ITEM_EXPANDING(self.marketTree, self.marketTree.GetId(), self.onExpand)
 
         self.__set_properties()
         self.__do_layout()
@@ -163,6 +174,7 @@ class MainWindow(wx.Frame):
 
         self.leftNotebook.AddPage(self.marketNotebookPane, ("Market"))
         self.leftNotebook.AddPage(self.quickbarNotebookPane, ("Quickbar"))
+        self.leftNotebook.AddPage(self.mineralsNotebookPane, ("Minerals"))
         mainSizer.Add(self.leftNotebook, 1, wx.EXPAND, 0)
 
         self.rightPanel.SetSizer(self.itemsSizer)
@@ -170,8 +182,6 @@ class MainWindow(wx.Frame):
         self.SetSizer(mainSizer)
         self.Layout()
 
-        # register the self.onExpand function to be called
-        wx.EVT_TREE_ITEM_EXPANDING(self.marketTree, self.marketTree.GetId(), self.onExpand)
         # initialize the marketTree
         self.buildTree('Market')
 
@@ -220,14 +230,14 @@ class MainWindow(wx.Frame):
             newsubGroups = []
 
             for x in numIDs:  # Iterate over all of the id lists generated above.
-                if itemList[x][2] == parentGroup:
+                if itemList[x].marketGroupID == parentGroup:
                     newsubGroups.append(int(x))
             newsubGroups.sort()
 
             for child in newsubGroups:
                 childGroup = child
-                childID = self.marketTree.AppendItem(parentID, str(itemList[child][1]))
-                self.marketTree.SetPyData(childID, (itemList[child][0], False, True))
+                childID = self.marketTree.AppendItem(parentID, str(itemList[child].itemName))
+                self.marketTree.SetPyData(childID, (itemList[child].itemID, False, True))
         else:
             for child in subGroups:
                 childGroup = child
@@ -258,13 +268,13 @@ class MainWindow(wx.Frame):
                             self.marketTree.SetPyData(grandchildID, (grandchildGroup, False, False))
                 else:
                     for x in numIDs:  # Iterate over all of the id lists generated above.
-                        if itemList[x][2] == newParentGroup:
+                        if itemList[x].marketGroupID == newParentGroup:
                             newsubGroups.append(int(x))
                     newsubGroups.sort()
 
                     for grandchild in newsubGroups:
                         grandchildGroup = grandchild
-                        grandchildID = self.marketTree.AppendItem(newParentID, str(itemList[grandchild][1]))
+                        grandchildID = self.marketTree.AppendItem(newParentID, str(itemList[grandchild].itemName))
                         self.marketTree.SetPyData(grandchildID, (grandchildGroup, False, False))
 
     def onAddWidget(self, moduleID, moduleName):
@@ -361,24 +371,24 @@ class MainWindow(wx.Frame):
 
         # Check its an item not a group
         if pydata[2] == True:
-            itemID = pydata[0]
+            selectedID = pydata[0]
             for item in itemList:
-                if item[0] == itemID:
-                    typeNames.update({int(item[0]): str(item[1])})
-        print(typeNames)
+                if item.itemID == selectedID:
+                    quickbarList.append(item)
 
     # Start of process() function
     def onProcess(self, event):
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
-        if typeNames != {}:
+        if quickbarList != []:
             # Build a list of item ids to send to Eve-Central.
             idList = []
-            for item in typeNames:
-                idList.append(item)
+            for item in quickbarList:
+                idList.append(item.itemID)
             # We'll tag on the mineral query with the item ids to save traffic.
             for mineral in mineralIDs:
                 idList.append(mineral)
 
+            print(idList)
             #idList = [4473, 16437...]
             self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
 
@@ -393,8 +403,8 @@ class MainWindow(wx.Frame):
                                                                                              amarrMineralBuy[mineral], amarrMineralSell[mineral],
                                                                                              hekMineralBuy[mineral], hekMineralSell[mineral]))
 
-            for item in typeNames:
-                output = reprocess(int(item))
+            for item in quickbarList:
+                output = reprocess(item.itemID)
                 print(output)
 
                 dodixieBuyTotal = 0  # Fullfilling Buy orders
@@ -417,10 +427,10 @@ class MainWindow(wx.Frame):
                         hekBuyTotal = hekBuyTotal + (int(output[key]) * hekMineralBuy[key])
                         hekSellTotal = hekSellTotal + (int(output[key]) * hekMineralSell[key])
 
-                if wx.FindWindowByName("module_%s" % int(item)):
+                if wx.FindWindowByName("module_%s" % int(item.itemID)):
                     continue
                 else:
-                    self.onAddWidget(int(item), typeNames[item])
+                    self.onAddWidget(int(item.itemID), item.itemName)
 
                 # Send Values to the GUI elements. as we have added to the wx widgets
                 # on the fly the easiest way to identify the widgets is by their unique
@@ -428,41 +438,41 @@ class MainWindow(wx.Frame):
                 # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
 
                 # Item Values
-                amarrBuy = wx.FindWindowByName("itemAmarrBuy_%s" % int(item))
-                amarrBuy.SetValue('{:,.2f}'.format(amarrItemBuy[item]))
-                dodiBuy = wx.FindWindowByName("itemDodiBuy_%s" % int(item))
-                dodiBuy.SetValue('{:,.2f}'.format(dodixieItemBuy[item]))
-                hekBuy = wx.FindWindowByName("itemHekBuy_%s" % int(item))
-                hekBuy.SetValue('{:,.2f}'.format(hekItemBuy[item]))
-                jitBuy = wx.FindWindowByName("itemJitaBuy_%s" % int(item))
-                jitBuy.SetValue('{:,.2f}'.format(jitaItemBuy[item]))
+                amarrBuy = wx.FindWindowByName("itemAmarrBuy_%s" % int(item.itemID))
+                amarrBuy.SetValue('{:,.2f}'.format(amarrItemBuy[item.itemID]))
+                dodiBuy = wx.FindWindowByName("itemDodiBuy_%s" % int(item.itemID))
+                dodiBuy.SetValue('{:,.2f}'.format(dodixieItemBuy[item.itemID]))
+                hekBuy = wx.FindWindowByName("itemHekBuy_%s" % int(item.itemID))
+                hekBuy.SetValue('{:,.2f}'.format(hekItemBuy[item.itemID]))
+                jitBuy = wx.FindWindowByName("itemJitaBuy_%s" % int(item.itemID))
+                jitBuy.SetValue('{:,.2f}'.format(jitaItemBuy[item.itemID]))
 
-                amarrSell = wx.FindWindowByName("itemAmarrSell_%s" % int(item))
-                amarrSell.SetValue('{:,.2f}'.format(amarrItemSell[item]))
-                dodiSell = wx.FindWindowByName("itemDodiSell_%s" % int(item))
-                dodiSell.SetValue('{:,.2f}'.format(dodixieItemSell[item]))
-                hekSell = wx.FindWindowByName("itemHekSell_%s" % int(item))
-                hekSell.SetValue('{:,.2f}'.format(hekItemSell[item]))
-                jitSell = wx.FindWindowByName("itemJitaSell_%s" % int(item))
-                jitSell.SetValue('{:,.2f}'.format(jitaItemSell[item]))
+                amarrSell = wx.FindWindowByName("itemAmarrSell_%s" % int(item.itemID))
+                amarrSell.SetValue('{:,.2f}'.format(amarrItemSell[item.itemID]))
+                dodiSell = wx.FindWindowByName("itemDodiSell_%s" % int(item.itemID))
+                dodiSell.SetValue('{:,.2f}'.format(dodixieItemSell[item.itemID]))
+                hekSell = wx.FindWindowByName("itemHekSell_%s" % int(item.itemID))
+                hekSell.SetValue('{:,.2f}'.format(hekItemSell[item.itemID]))
+                jitSell = wx.FindWindowByName("itemJitaSell_%s" % int(item.itemID))
+                jitSell.SetValue('{:,.2f}'.format(jitaItemSell[item.itemID]))
 
                 # Reprocess Values
-                amarrBuy = wx.FindWindowByName("reproAmarrBuy_%s" % int(item))
+                amarrBuy = wx.FindWindowByName("reproAmarrBuy_%s" % int(item.itemID))
                 amarrBuy.SetValue('{:,.2f}'.format(amarrBuyTotal))
-                dodiBuy = wx.FindWindowByName("reproDodiBuy_%s" % int(item))
+                dodiBuy = wx.FindWindowByName("reproDodiBuy_%s" % int(item.itemID))
                 dodiBuy.SetValue('{:,.2f}'.format(dodixieBuyTotal))
-                hekBuy = wx.FindWindowByName("reproHekBuy_%s" % int(item))
+                hekBuy = wx.FindWindowByName("reproHekBuy_%s" % int(item.itemID))
                 hekBuy.SetValue('{:,.2f}'.format(hekBuyTotal))
-                jitBuy = wx.FindWindowByName("reproJitaBuy_%s" % int(item))
+                jitBuy = wx.FindWindowByName("reproJitaBuy_%s" % int(item.itemID))
                 jitBuy.SetValue('{:,.2f}'.format(jitaBuyTotal))
 
-                amarrSell = wx.FindWindowByName("reproAmarrSell_%s" % int(item))
+                amarrSell = wx.FindWindowByName("reproAmarrSell_%s" % int(item.itemID))
                 amarrSell.SetValue('{:,.2f}'.format(amarrSellTotal))
-                dodiSell = wx.FindWindowByName("reproDodiSell_%s" % int(item))
+                dodiSell = wx.FindWindowByName("reproDodiSell_%s" % int(item.itemID))
                 dodiSell.SetValue('{:,.2f}'.format(dodixieSellTotal))
-                hekSell = wx.FindWindowByName("reproHekSell_%s" % int(item))
+                hekSell = wx.FindWindowByName("reproHekSell_%s" % int(item.itemID))
                 hekSell.SetValue('{:,.2f}'.format(hekSellTotal))
-                jitSell = wx.FindWindowByName("reproJitaSell_%s" % int(item))
+                jitSell = wx.FindWindowByName("reproJitaSell_%s" % int(item.itemID))
                 jitSell.SetValue('{:,.2f}'.format(jitaSellTotal))
 
             self.statusbar.SetStatusText('Welcome to Nett - ' + 'Idle')
