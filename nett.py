@@ -456,7 +456,7 @@ class MainWindow(wx.Frame):
             for mineral in mineralIDs:
                 idList.append(mineral)
 
-            print(idList)
+            #print(idList)
             #idList = [4473, 16437...]
             self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
 
@@ -473,7 +473,7 @@ class MainWindow(wx.Frame):
 
             for item in quickbarList:
                 output = reprocess(item.itemID)
-                print(output)
+                #print(output)
 
                 reproDodixieBuy = 0  # Fullfilling Buy orders
                 reproDodixieSell = 0  # Placing Sell orders
@@ -520,7 +520,6 @@ class MainWindow(wx.Frame):
                 widgetNames = ['amarrItemBuy', 'dodixieItemBuy', 'hekItemBuy', 'jitaItemBuy',
                                'amarrItemSell', 'dodixieItemSell', 'hekItemSell', 'jitaItemSell']
                 for name in widgetNames:
-                    print(name)
                     widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
                     widget.SetValue('{:,.2f}'.format(vars(item)[name]))
 
@@ -528,7 +527,6 @@ class MainWindow(wx.Frame):
                 widgetNames = ['reproAmarrBuy', 'reproDodixieBuy', 'reproHekBuy', 'reproJitaBuy',
                                'reproAmarrSell', 'reproDodixieSell', 'reproHekSell', 'reproJitaSell']
                 for name in widgetNames:
-                    print(name)
                     widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
                     widget.SetValue('{:,.2f}'.format(vars()[name]))
 
