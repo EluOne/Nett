@@ -59,6 +59,8 @@ class Item(object):
         self.dodixieItemSell = dodixieItemSell
         self.hekItemSell = hekItemSell
         self.jitaItemSell = jitaItemSell
+        # Use a per item time stamp to handle query limiting to the api server.
+        #self.lastQuery = lastQuery
 
 
 # This is the class where we will store material data from the database and Eve-Central queries.
@@ -78,11 +80,12 @@ class MainWindow(wx.Frame):
         # List and Dictionary initialisation.
         if itemList == []:  # Build a list of all items from the static data dump.
             try:
-                con = lite.connect('sqlite-latest.sqlite')
+                con = lite.connect('sqlite-latest.sqlite')  # Currently the full dump that I haven't uploaded. (325mb)
                 con.text_factory = str
 
                 with con:
                     cur = con.cursor()
+                    # With this query we are looking to populate the itemID's with their respective names and parent market groups.
                     statement = "SELECT typeID, typeName, marketGroupID FROM invtypes WHERE marketGroupID >= 0 ORDER BY typeName;"
                     cur.execute(statement)
 
@@ -91,6 +94,7 @@ class MainWindow(wx.Frame):
                     for row in rows:
                         itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0))
 
+                    # This query will hold all of the market group ID to name relations in a dictionary for ease.
                     groupStatement = "SELECT marketGroupID, marketGroupName FROM invMarketGroups WHERE marketGroupID >= 0 ORDER BY marketGroupID;"
                     cur.execute(groupStatement)
 
@@ -99,6 +103,7 @@ class MainWindow(wx.Frame):
                     for row in groupRows:
                         marketGroups.update({int(row[0]): str(row[1])})
 
+                    # This statement is for the branches of the market treeCtrl using all the market groups and their relationship to each other.
                     relationStatement = "SELECT marketGroupID, parentGroupID FROM invMarketGroups ORDER BY parentGroupID;"
                     cur.execute(relationStatement)
 
@@ -135,7 +140,7 @@ class MainWindow(wx.Frame):
 
         self.rightPanel = wx.ScrolledWindow(self, wx.ID_ANY, style=wx.TAB_TRAVERSAL)
 
-        self.statusbar = self.CreateStatusBar()  # A Statusbar in the bottom of the window
+        self.statusbar = self.CreateStatusBar()  # A Status bar in the bottom of the window
 
         # Menu Bar
         self.frame_menubar = wx.MenuBar()
@@ -440,7 +445,6 @@ class MainWindow(wx.Frame):
 
         self.quickbarListCtrl.SetObjects(quickbarList)
 
-    # Start of process() function
     def onProcess(self, event):
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
         if quickbarList != []:
