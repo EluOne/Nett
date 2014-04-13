@@ -413,6 +413,15 @@ class MainWindow(wx.Frame):
         self.rightPanel.SetSizer(self.itemsSizer)
         self.Layout()
 
+    def onRemoveWidget(self):
+        """Remove all children components and destroy them."""
+        if self.itemsSizer.GetChildren():
+            while self.rightPanel.GetSizer().Hide(0):
+                self.rightPanel.GetSizer().Remove(0)
+                pass
+            self.rightPanel.DestroyChildren()
+            self.Layout()
+
     def onAdd(self, event):
         # Get current selection data from tree ctrl
         currentSelection = self.marketTree.GetSelection()
@@ -446,6 +455,7 @@ class MainWindow(wx.Frame):
         self.quickbarListCtrl.SetObjects(quickbarList)
 
     def onProcess(self, event):
+        self.onRemoveWidget()
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
         if quickbarList != []:
             # Build a list of item ids to send to Eve-Central.
