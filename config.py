@@ -18,5 +18,5 @@
 # Author: Tim Cumming aka Elusive One
 # Created: 01/04/14
 
-version = '0.0.1'
+version = '0.0.1-alpha'
 headers = {'User-Agent': ('Nett/%s +https://github.com/EluOne/Nett' % version)}

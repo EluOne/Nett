@@ -172,7 +172,7 @@ def fetchItems(typeIDs):
                     error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
                     onError(error)
                 except requests.exceptions.ConnectionError as err:  # A Connection error occurred.
-                    error = ('Error Connecting to Tranquility: ' + str(err.reason))  # Error String
+                    error = ('Error Connecting to Eve-Central: ' + str(err.reason))  # Error String
                     onError(error)
                 except requests.exceptions.RequestException as err:  # There was an ambiguous exception that occurred while handling your request.
                     error = ('HTTP Exception')  # Error String

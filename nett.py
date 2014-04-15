@@ -59,7 +59,7 @@ class Item(object):
         self.dodixieItemSell = dodixieItemSell
         self.hekItemSell = hekItemSell
         self.jitaItemSell = jitaItemSell
-        # Use a per item time stamp to handle query limiting to the api server.
+        # Use a per item time stamp to handle query limiting to the API server.
         #self.lastQuery = lastQuery
 
 
@@ -67,9 +67,32 @@ class Item(object):
 # I have decided to use the name Material instead of Minerals as the upcoming changes to reprocessing
 # will affect the returned outcome to include recyclable parts.
 class Material(object):
-    def __init__(self, materialID, materialName):
+    def __init__(self, materialID, materialName,
+                 amarrBuy, dodixieBuy, hekBuy, jitaBuy,
+                 amarrSell, dodixieSell, hekSell, jitaSell):
         self.materialID = materialID
         self.materialName = materialName
+        # Market Buy Order Prices
+        self.amarrBuy = amarrBuy
+        self.dodixieBuy = dodixieBuy
+        self.hekBuy = hekBuy
+        self.jitaBuy = jitaBuy
+        # Market Sell Order Prices
+        self.amarrSell = amarrSell
+        self.dodixieSell = dodixieSell
+        self.hekSell = hekSell
+        self.jitaSell = jitaSell
+        # Use a per item time stamp to handle query limiting to the API server.
+        #self.lastQuery = lastQuery
+
+
+# This class is just for the display of material prices in the materialsListCtrl.
+class MaterialRow(object):
+    def __init__(self, materialName, systemName, materialBuy, materialSell):
+        self.materialName = materialName
+        self.systemName = systemName
+        self.materialBuy = '{:,.2f}'.format(materialBuy)
+        self.materialSell = '{:,.2f}'.format(materialSell)
 
 
 class MainWindow(wx.Frame):
@@ -80,7 +103,7 @@ class MainWindow(wx.Frame):
         # List and Dictionary initialisation.
         if itemList == []:  # Build a list of all items from the static data dump.
             try:
-                con = lite.connect('sqlite-latest.sqlite')  # Currently the full dump that I haven't uploaded. (325mb)
+                con = lite.connect('static.db')  # Currently the full dump that I haven't uploaded. (325mb)
                 con.text_factory = str
 
                 with con:
@@ -124,7 +147,7 @@ class MainWindow(wx.Frame):
 
         self.leftNotebook = wx.Notebook(self, wx.ID_ANY, style=0)
         self.marketNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
-        self.searchTextCtrl = wx.TextCtrl(self.marketNotebookPane, wx.ID_ANY, "")
+        self.searchTextCtrl = wx.TextCtrl(self.marketNotebookPane, wx.ID_ANY, "Search Not Available")
         self.searchButton = wx.Button(self.marketNotebookPane, wx.ID_FIND, (""))
         self.marketTree = wx.TreeCtrl(self.marketNotebookPane, wx.ID_ANY, style=wx.TR_HAS_BUTTONS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
         self.addButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Add to Quickbar"))
@@ -184,14 +207,17 @@ class MainWindow(wx.Frame):
         self.quickbarListCtrl.SetEmptyListMsg('Add some items\nto start')
 
         self.quickbarListCtrl.SetColumns([
-            ColumnDefn('Name', 'left', -1, 'itemName'),
+            ColumnDefn('Name', 'left', 320, 'itemName'),
         ])
 
         self.materialsListCtrl.SetColumns([
-            ColumnDefn('Name', 'left', -1, 'materialName'),
-            ColumnDefn('Buy', 'right', -1, 'materialBuy'),
-            ColumnDefn('Sell', 'right', -1, 'materialSell'),
+            ColumnDefn('Name', 'left', 100, 'materialName'),
+            ColumnDefn('Buy', 'right', 90, 'materialBuy'),
+            ColumnDefn('Sell', 'right', 90, 'materialSell'),
+            ColumnDefn('System', 'right', -1, 'systemName'),
         ])
+
+        self.materialsListCtrl.SetSortColumn(self.materialsListCtrl.columns[4])
 
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -414,7 +440,7 @@ class MainWindow(wx.Frame):
         self.Layout()
 
     def onRemoveWidget(self):
-        """Remove all children components and destroy them."""
+        """Remove all children components and destroy them"""
         if self.itemsSizer.GetChildren():
             while self.rightPanel.GetSizer().Hide(0):
                 self.rightPanel.GetSizer().Remove(0)
@@ -472,14 +498,27 @@ class MainWindow(wx.Frame):
 
             dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
 
-            print("Mineral Prices by System\n")
+            #print("Mineral Prices by System\n")
 
             for mineral in mineralIDs:
-                print('%s (%s): (Dodixie: Buy: %s / Sell: %s) (Jita: Buy: %s / Sell: %s) (Amarr: Buy: %s / Sell: %s) (Hek: Buy: %s / Sell: %s)' % (mineralIDs[mineral], int(mineral),
-                                                                                             dodixieMineralBuy[mineral], dodixieMineralSell[mineral],
-                                                                                             jitaMineralBuy[mineral], jitaMineralSell[mineral],
-                                                                                             amarrMineralBuy[mineral], amarrMineralSell[mineral],
-                                                                                             hekMineralBuy[mineral], hekMineralSell[mineral]))
+                #print('%s (%s): (Dodixie: Buy: %s / Sell: %s) (Jita: Buy: %s / Sell: %s) (Amarr: Buy: %s / Sell: %s) (Hek: Buy: %s / Sell: %s)' % (mineralIDs[mineral], int(mineral),
+                #                                                                             dodixieMineralBuy[mineral], dodixieMineralSell[mineral],
+                #                                                                             jitaMineralBuy[mineral], jitaMineralSell[mineral],
+                #                                                                             amarrMineralBuy[mineral], amarrMineralSell[mineral],
+                #                                                                             hekMineralBuy[mineral], hekMineralSell[mineral]))
+                materialsList.append(Material(int(mineral), mineralIDs[mineral],
+                                              amarrMineralBuy[mineral], dodixieMineralBuy[mineral], hekMineralBuy[mineral], jitaMineralBuy[mineral],
+                                              amarrMineralSell[mineral], dodixieMineralSell[mineral], hekMineralSell[mineral], jitaMineralSell[mineral]
+                                              ))
+
+            materialRows = []
+            for mineral in materialsList:
+                materialRows.append(MaterialRow(mineral.materialName, 'Amarr', mineral.amarrBuy, mineral.amarrSell))
+                materialRows.append(MaterialRow(mineral.materialName, 'Dodixie', mineral.dodixieBuy, mineral.dodixieSell))
+                materialRows.append(MaterialRow(mineral.materialName, 'Hek', mineral.hekBuy, mineral.hekSell))
+                materialRows.append(MaterialRow(mineral.materialName, 'Jita', mineral.jitaBuy, mineral.jitaSell))
+
+            self.materialsListCtrl.SetObjects(materialRows)
 
             for item in quickbarList:
                 output = reprocess(item.itemID)
@@ -548,6 +587,7 @@ compare items at the main market hubs.
 
 If you like my work please consider an ISK donation to Elusive One.
 
+This application uses data provided by Eve-Central.com
 All EVE-Online related materials are property of CCP hf."""
 
         licence = """NETT is released under GNU GPLv3:
