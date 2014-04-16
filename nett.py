@@ -45,7 +45,7 @@ numIDs = 0
 class Item(object):
     def __init__(self, itemID, itemName, marketGroupID,
                  amarrItemBuy, dodixieItemBuy, hekItemBuy, jitaItemBuy,
-                 amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell):
+                 amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell, widgetKey):
         self.itemID = itemID
         self.itemName = itemName
         self.marketGroupID = marketGroupID
@@ -61,6 +61,8 @@ class Item(object):
         self.jitaItemSell = jitaItemSell
         # Use a per item time stamp to handle query limiting to the API server.
         #self.lastQuery = lastQuery
+        # Due to limits on 32bit machines we can't use the item IDs as the basis for widget IDs
+        self.widgetKey = widgetKey
 
 
 # This is the class where we will store material data from the database and Eve-Central queries.
@@ -100,6 +102,8 @@ class MainWindow(wx.Frame):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
 
+        self.numWidgets = 0
+
         # List and Dictionary initialisation.
         if itemList == []:  # Build a list of all items from the static data dump.
             try:
@@ -109,13 +113,14 @@ class MainWindow(wx.Frame):
                 with con:
                     cur = con.cursor()
                     # With this query we are looking to populate the itemID's with their respective names and parent market groups.
+                    # Eve items currently go up to ID 33612, then Dust items start from 350916
                     statement = "SELECT typeID, typeName, marketGroupID FROM invtypes WHERE marketGroupID >= 0 ORDER BY typeName;"
                     cur.execute(statement)
 
                     rows = cur.fetchall()
 
                     for row in rows:
-                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0))
+                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
                     # This query will hold all of the market group ID to name relations in a dictionary for ease.
                     groupStatement = "SELECT marketGroupID, marketGroupName FROM invMarketGroups WHERE marketGroupID >= 0 ORDER BY marketGroupID;"
@@ -352,12 +357,12 @@ class MainWindow(wx.Frame):
                         grandchildID = self.marketTree.AppendItem(newParentID, str(itemList[grandchild].itemName))
                         self.marketTree.SetPyData(grandchildID, (grandchildGroup, False, False))
 
-    def onAddWidget(self, moduleID, moduleName):
+    def onAddWidget(self, moduleID, moduleName, widgetKey):
         '''onAddWidget will add widgets into the right scrolling
         panel as required to show the number of items prices'''
         # Lets try add to the right panel.
         #self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)), name="module_%s" % moduleID)
-        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, int('1000%s' % moduleID), (str(moduleName)), name="module_%s" % moduleID)
+        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, int('100%s' % widgetKey), (str(moduleName)), name="module_%s" % moduleID)
         self.moduleSizer_1_staticbox.Lower()
         moduleSizer_1 = wx.StaticBoxSizer(self.moduleSizer_1_staticbox, wx.VERTICAL)
         reproGrid_1 = wx.GridSizer(3, 5, 0, 0)
@@ -371,15 +376,15 @@ class MainWindow(wx.Frame):
         itemJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"), name="itemJita_%s" % moduleID)
         itemSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"), name="itemSell_%s" % moduleID)
         #itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
-        itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('1001%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
-        itemDodiSell_1 = wx.TextCtrl(self.rightPanel, int('1002%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemSell_%s" % moduleID)
-        itemHekSell_1 = wx.TextCtrl(self.rightPanel, int('1003%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemSell_%s" % moduleID)
-        itemJitaSell_1 = wx.TextCtrl(self.rightPanel, int('1004%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemSell_%s" % moduleID)
+        itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('101%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
+        itemDodiSell_1 = wx.TextCtrl(self.rightPanel, int('102%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemSell_%s" % moduleID)
+        itemHekSell_1 = wx.TextCtrl(self.rightPanel, int('103%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemSell_%s" % moduleID)
+        itemJitaSell_1 = wx.TextCtrl(self.rightPanel, int('104%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemSell_%s" % moduleID)
         itemBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"), name="itemBuy_%s" % moduleID)
-        itemAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('1005%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemBuy_%s" % moduleID)
-        itemDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('1006%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemBuy_%s" % moduleID)
-        itemHekBuy_1 = wx.TextCtrl(self.rightPanel, int('1007%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemBuy_%s" % moduleID)
-        itemJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('1008%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemBuy_%s" % moduleID)
+        itemAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('105%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemBuy_%s" % moduleID)
+        itemDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('106%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemBuy_%s" % moduleID)
+        itemHekBuy_1 = wx.TextCtrl(self.rightPanel, int('107%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemBuy_%s" % moduleID)
+        itemJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('108%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemBuy_%s" % moduleID)
 
         static_line_1 = wx.StaticLine(self.rightPanel, wx.ID_ANY, name="line_%s" % moduleID)
 
@@ -390,15 +395,15 @@ class MainWindow(wx.Frame):
         reproHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"), name="reproHek_%s" % moduleID)
         reproJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"), name="reproJita_%s" % moduleID)
         reproSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"), name="reproSell_%s" % moduleID)
-        reproAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('2001%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrSell_%s" % moduleID)
-        reproDodiSell_1 = wx.TextCtrl(self.rightPanel, int('2002%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieSell_%s" % moduleID)
-        reproHekSell_1 = wx.TextCtrl(self.rightPanel, int('2003%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekSell_%s" % moduleID)
-        reproJitaSell_1 = wx.TextCtrl(self.rightPanel, int('2004%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaSell_%s" % moduleID)
+        reproAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('201%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrSell_%s" % moduleID)
+        reproDodiSell_1 = wx.TextCtrl(self.rightPanel, int('202%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieSell_%s" % moduleID)
+        reproHekSell_1 = wx.TextCtrl(self.rightPanel, int('203%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekSell_%s" % moduleID)
+        reproJitaSell_1 = wx.TextCtrl(self.rightPanel, int('204%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaSell_%s" % moduleID)
         reproBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"), name="reproBuy_%s" % moduleID)
-        reproAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('2005%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrBuy_%s" % moduleID)
-        reproDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('2006%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieBuy_%s" % moduleID)
-        reproHekBuy_1 = wx.TextCtrl(self.rightPanel, int('2007%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekBuy_%s" % moduleID)
-        reproJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('2008%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaBuy_%s" % moduleID)
+        reproAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('205%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrBuy_%s" % moduleID)
+        reproDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('206%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieBuy_%s" % moduleID)
+        reproHekBuy_1 = wx.TextCtrl(self.rightPanel, int('207%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekBuy_%s" % moduleID)
+        reproJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('208%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaBuy_%s" % moduleID)
 
         moduleSizer_1.Add(itemLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemMarketLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
@@ -441,18 +446,18 @@ class MainWindow(wx.Frame):
         self.rightPanel.SetSizer(self.itemsSizer)
         self.Layout()
 
-    def onRemoveWidget(self, moduleID):
+    def onRemoveWidget(self, widgetKey):
         """Remove all children components for a given module and destroy them"""
-        child = wx.FindWindowById(int('1000%s' % moduleID))
+        child = wx.FindWindowById(int('100%s' % widgetKey))
         if child:
             parent = child.GetContainingSizer()
 
             widgetIds = [
-                 '1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008',
-                 '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008'
+                 '101', '102', '103', '104', '105', '106', '107', '108',
+                 '201', '202', '203', '204', '205', '206', '207', '208'
                  ]
             for wid in widgetIds:
-                widget = wx.FindWindowById(int('%s%s' % (wid, moduleID)))
+                widget = wx.FindWindowById(int('%s%s' % (wid, widgetKey)))
                 if widget:
                     widget.Destroy()
 
@@ -486,7 +491,7 @@ class MainWindow(wx.Frame):
             for y in numItemRows:
                 if (x.itemID == quickbarList[y].itemID):
                     quickbarList[y] = 'deleted'
-                    self.onRemoveWidget(x.itemID)
+                    self.onRemoveWidget(x.widgetKey)
 
             for z in quickbarList[:]:
                 if z == 'deleted':
@@ -511,14 +516,7 @@ class MainWindow(wx.Frame):
 
             dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
 
-            #print("Mineral Prices by System\n")
-
             for mineral in mineralIDs:
-                #print('%s (%s): (Dodixie: Buy: %s / Sell: %s) (Jita: Buy: %s / Sell: %s) (Amarr: Buy: %s / Sell: %s) (Hek: Buy: %s / Sell: %s)' % (mineralIDs[mineral], int(mineral),
-                #                                                                             dodixieMineralBuy[mineral], dodixieMineralSell[mineral],
-                #                                                                             jitaMineralBuy[mineral], jitaMineralSell[mineral],
-                #                                                                             amarrMineralBuy[mineral], amarrMineralSell[mineral],
-                #                                                                             hekMineralBuy[mineral], hekMineralSell[mineral]))
                 materialsList.append(Material(int(mineral), mineralIDs[mineral],
                                               amarrMineralBuy[mineral], dodixieMineralBuy[mineral], hekMineralBuy[mineral], jitaMineralBuy[mineral],
                                               amarrMineralSell[mineral], dodixieMineralSell[mineral], hekMineralSell[mineral], jitaMineralSell[mineral]
@@ -546,6 +544,7 @@ class MainWindow(wx.Frame):
                 reproHekBuy = 0  # Fullfilling Buy orders
                 reproHekSell = 0  # Placing Sell orders
 
+                # Generate reprocessed values from raw material prices. (Currently not stored)
                 for key in output:
                     if key in mineralIDs:
                         reproDodixieBuy = reproDodixieBuy + (int(output[key]) * dodixieMineralBuy[key])
@@ -560,12 +559,14 @@ class MainWindow(wx.Frame):
                 if wx.FindWindowByName("module_%s" % int(item.itemID)):
                     continue
                 else:
-                    self.onAddWidget(int(item.itemID), item.itemName)
+                    self.numWidgets += 1
+                    print(self.numWidgets)
+                    item.widgetKey = self.numWidgets
+                    self.onAddWidget(int(item.itemID), item.itemName, item.widgetKey)
 
                 # Send Values to the GUI elements. as we have added to the wx widgets
                 # on the fly the easiest way to identify the widgets is by their unique
                 # names assigned on creation.
-                # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
 
                 item.amarrItemBuy = amarrItemBuy[item.itemID]
                 item.dodixieItemBuy = dodixieItemBuy[item.itemID]
@@ -577,6 +578,7 @@ class MainWindow(wx.Frame):
                 item.jitaItemSell = jitaItemSell[item.itemID]
 
                 # Iterate over all of the widgets and their respective variables to fill in values.
+                # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
 
                 # Item Values
                 widgetNames = ['amarrItemBuy', 'dodixieItemBuy', 'hekItemBuy', 'jitaItemBuy',
