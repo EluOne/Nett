@@ -356,47 +356,49 @@ class MainWindow(wx.Frame):
         '''onAddWidget will add widgets into the right scrolling
         panel as required to show the number of items prices'''
         # Lets try add to the right panel.
-        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)), name="module_%s" % moduleID)
+        #self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)), name="module_%s" % moduleID)
+        self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, int('1000%s' % moduleID), (str(moduleName)), name="module_%s" % moduleID)
         self.moduleSizer_1_staticbox.Lower()
         moduleSizer_1 = wx.StaticBoxSizer(self.moduleSizer_1_staticbox, wx.VERTICAL)
         reproGrid_1 = wx.GridSizer(3, 5, 0, 0)
         itemGrid_1 = wx.GridSizer(3, 5, 0, 0)
 
-        itemLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Item Value"))
-        itemMarketLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Market"))
-        itemAmarrLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Amarr"))
-        itemDodiLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Dodixie"))
-        itemHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"))
-        itemJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"))
-        itemSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"))
-        itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
-        itemDodiSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemSell_%s" % moduleID)
-        itemHekSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemSell_%s" % moduleID)
-        itemJitaSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemSell_%s" % moduleID)
-        itemBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"))
-        itemAmarrBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemBuy_%s" % moduleID)
-        itemDodiBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemBuy_%s" % moduleID)
-        itemHekBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemBuy_%s" % moduleID)
-        itemJitaBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemBuy_%s" % moduleID)
+        itemLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Item Value"), name="itemValue_%s" % moduleID)
+        itemMarketLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Market"), name="itemMarket_%s" % moduleID)
+        itemAmarrLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Amarr"), name="itemAmarr_%s" % moduleID)
+        itemDodiLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Dodixie"), name="itemDodixie_%s" % moduleID)
+        itemHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"), name="itemHek_%s" % moduleID)
+        itemJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"), name="itemJita_%s" % moduleID)
+        itemSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"), name="itemSell_%s" % moduleID)
+        #itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
+        itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('1001%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
+        itemDodiSell_1 = wx.TextCtrl(self.rightPanel, int('1002%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemSell_%s" % moduleID)
+        itemHekSell_1 = wx.TextCtrl(self.rightPanel, int('1003%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemSell_%s" % moduleID)
+        itemJitaSell_1 = wx.TextCtrl(self.rightPanel, int('1004%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemSell_%s" % moduleID)
+        itemBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"), name="itemBuy_%s" % moduleID)
+        itemAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('1005%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemBuy_%s" % moduleID)
+        itemDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('1006%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemBuy_%s" % moduleID)
+        itemHekBuy_1 = wx.TextCtrl(self.rightPanel, int('1007%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemBuy_%s" % moduleID)
+        itemJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('1008%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="jitaItemBuy_%s" % moduleID)
 
-        static_line_1 = wx.StaticLine(self.rightPanel, wx.ID_ANY)
+        static_line_1 = wx.StaticLine(self.rightPanel, wx.ID_ANY, name="line_%s" % moduleID)
 
-        reproLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Reprocessed Value"))
-        reproMarketLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Market"))
-        reproAmarrLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Amarr"))
-        reproDodiLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Dodixie"))
-        reproHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"))
-        reproJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"))
-        reproSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"))
-        reproAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrSell_%s" % moduleID)
-        reproDodiSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieSell_%s" % moduleID)
-        reproHekSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekSell_%s" % moduleID)
-        reproJitaSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaSell_%s" % moduleID)
-        reproBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"))
-        reproAmarrBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrBuy_%s" % moduleID)
-        reproDodiBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieBuy_%s" % moduleID)
-        reproHekBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekBuy_%s" % moduleID)
-        reproJitaBuy_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaBuy_%s" % moduleID)
+        reproLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Reprocessed Value"), name="reproValue_%s" % moduleID)
+        reproMarketLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Market"), name="reproMarket_%s" % moduleID)
+        reproAmarrLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Amarr"), name="reproAmarr_%s" % moduleID)
+        reproDodiLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Dodixie"), name="reproDodixie_%s" % moduleID)
+        reproHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"), name="reproHek_%s" % moduleID)
+        reproJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"), name="reproJita_%s" % moduleID)
+        reproSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"), name="reproSell_%s" % moduleID)
+        reproAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('2001%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrSell_%s" % moduleID)
+        reproDodiSell_1 = wx.TextCtrl(self.rightPanel, int('2002%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieSell_%s" % moduleID)
+        reproHekSell_1 = wx.TextCtrl(self.rightPanel, int('2003%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekSell_%s" % moduleID)
+        reproJitaSell_1 = wx.TextCtrl(self.rightPanel, int('2004%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaSell_%s" % moduleID)
+        reproBuyLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Buy"), name="reproBuy_%s" % moduleID)
+        reproAmarrBuy_1 = wx.TextCtrl(self.rightPanel, int('2005%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproAmarrBuy_%s" % moduleID)
+        reproDodiBuy_1 = wx.TextCtrl(self.rightPanel, int('2006%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproDodixieBuy_%s" % moduleID)
+        reproHekBuy_1 = wx.TextCtrl(self.rightPanel, int('2007%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproHekBuy_%s" % moduleID)
+        reproJitaBuy_1 = wx.TextCtrl(self.rightPanel, int('2008%s' % moduleID), "", size=(130, 21), style=wx.TE_RIGHT, name="reproJitaBuy_%s" % moduleID)
 
         moduleSizer_1.Add(itemLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
         itemGrid_1.Add(itemMarketLabel_1, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ADJUST_MINSIZE, 0)
@@ -439,14 +441,25 @@ class MainWindow(wx.Frame):
         self.rightPanel.SetSizer(self.itemsSizer)
         self.Layout()
 
-    def onRemoveWidget(self):
-        """Remove all children components and destroy them"""
-        if self.itemsSizer.GetChildren():
-            while self.rightPanel.GetSizer().Hide(0):
-                self.rightPanel.GetSizer().Remove(0)
-                pass
-            self.rightPanel.DestroyChildren()
-            self.Layout()
+    def onRemoveWidget(self, moduleID):
+        """Remove all children components for a given module and destroy them"""
+        child = wx.FindWindowById(int('1000%s' % moduleID))
+        if child:
+            parent = child.GetContainingSizer()
+
+            widgetIds = [
+                 '1001', '1002', '1003', '1004', '1005', '1006', '1007', '1008',
+                 '2001', '2002', '2003', '2004', '2005', '2006', '2007', '2008'
+                 ]
+            for wid in widgetIds:
+                widget = wx.FindWindowById(int('%s%s' % (wid, moduleID)))
+                if widget:
+                    widget.Destroy()
+
+            if parent:
+                self.itemsSizer.Hide(parent)
+                self.itemsSizer.Remove(parent)
+        self.Layout()
 
     def onAdd(self, event):
         # Get current selection data from tree ctrl
@@ -473,6 +486,7 @@ class MainWindow(wx.Frame):
             for y in numItemRows:
                 if (x.itemID == quickbarList[y].itemID):
                     quickbarList[y] = 'deleted'
+                    self.onRemoveWidget(x.itemID)
 
             for z in quickbarList[:]:
                 if z == 'deleted':
@@ -481,7 +495,6 @@ class MainWindow(wx.Frame):
         self.quickbarListCtrl.SetObjects(quickbarList)
 
     def onProcess(self, event):
-        self.onRemoveWidget()
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
         if quickbarList != []:
             # Build a list of item ids to send to Eve-Central.
