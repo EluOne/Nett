@@ -531,6 +531,8 @@ class MainWindow(wx.Frame):
 
             self.materialsListCtrl.SetObjects(materialRows)
 
+            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Calculating Reprocessed Values...')
+
             for item in quickbarList:
                 output = reprocess(item.itemID)
                 #print(output)
@@ -560,7 +562,6 @@ class MainWindow(wx.Frame):
                     continue
                 else:
                     self.numWidgets += 1
-                    print(self.numWidgets)
                     item.widgetKey = self.numWidgets
                     self.onAddWidget(int(item.itemID), item.itemName, item.widgetKey)
 
