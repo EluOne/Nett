@@ -642,10 +642,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
             self.Close(True)
 
 # end of class MainWindow
-if __name__ == "__main__":
-    app = wx.PySimpleApp(0)
-    wx.InitAllImageHandlers()
-    frame = MainWindow(None, wx.ID_ANY, "")
-    app.SetTopWindow(frame)
-    frame.Show()
+
+
+class MyApp(wx.App):
+    def OnInit(self):
+        frame = MainWindow(None, -1, '')
+        self.SetTopWindow(frame)
+        frame.Center()
+        frame.Show()
+        return 1
+
+# end of class MyApp
+
+if __name__ == '__main__':
+    app = MyApp(0)
     app.MainLoop()
