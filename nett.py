@@ -19,6 +19,7 @@
 # Created: 01/04/14
 
 import time
+import datetime
 import wx
 import sqlite3 as lite
 
@@ -46,7 +47,8 @@ numIDs = 0
 class Item(object):
     def __init__(self, itemID, itemName, marketGroupID,
                  amarrItemBuy, dodixieItemBuy, hekItemBuy, jitaItemBuy,
-                 amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell, widgetKey):
+                 amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell,
+                 lastQuery, widgetKey):
         self.itemID = itemID
         self.itemName = itemName
         self.marketGroupID = marketGroupID
@@ -61,7 +63,7 @@ class Item(object):
         self.hekItemSell = hekItemSell
         self.jitaItemSell = jitaItemSell
         # Use a per item time stamp to handle query limiting to the API server.
-        #self.lastQuery = lastQuery
+        self.lastQuery = lastQuery
         # Due to limits on 32bit machines we can't use the item IDs as the basis for widget IDs
         self.widgetKey = widgetKey
 
@@ -69,10 +71,12 @@ class Item(object):
 # This is the class where we will store material data from the database and Eve-Central queries.
 # I have decided to use the name Material instead of Minerals as the upcoming changes to reprocessing
 # will affect the returned outcome to include recyclable parts.
+# This will probably end up being removed as it uses nearly all the same fields as above.
 class Material(object):
     def __init__(self, materialID, materialName,
                  amarrBuy, dodixieBuy, hekBuy, jitaBuy,
-                 amarrSell, dodixieSell, hekSell, jitaSell):
+                 amarrSell, dodixieSell, hekSell, jitaSell,
+                 lastQuery):
         self.materialID = materialID
         self.materialName = materialName
         # Market Buy Order Prices
@@ -86,7 +90,7 @@ class Material(object):
         self.hekSell = hekSell
         self.jitaSell = jitaSell
         # Use a per item time stamp to handle query limiting to the API server.
-        #self.lastQuery = lastQuery
+        self.lastQuery = lastQuery
 
 
 # This class is just for the display of material prices in the materialsListCtrl.
@@ -121,7 +125,7 @@ class MainWindow(wx.Frame):
                     rows = cur.fetchall()
 
                     for row in rows:
-                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
                     # This query will hold all of the market group ID to name relations in a dictionary for ease.
                     groupStatement = "SELECT marketGroupID, marketGroupName FROM invMarketGroups WHERE marketGroupID >= 0 ORDER BY marketGroupID;"
@@ -516,6 +520,9 @@ class MainWindow(wx.Frame):
             #print(idList)
             #idList = [4473, 16437...]
 
+            # This is for time stamping our out bound queries so we don't request data we already have that is recent.
+            queryTime = datetime.datetime.utcnow().replace(microsecond=0)
+
             # Start the clock for the fetch from Eve-Central.
             t = time.clock()
 
@@ -533,8 +540,8 @@ class MainWindow(wx.Frame):
             for mineral in mineralIDs:
                 materialsList.append(Material(int(mineral), mineralIDs[mineral],
                                               amarrMineralBuy[mineral], dodixieMineralBuy[mineral], hekMineralBuy[mineral], jitaMineralBuy[mineral],
-                                              amarrMineralSell[mineral], dodixieMineralSell[mineral], hekMineralSell[mineral], jitaMineralSell[mineral]
-                                              ))
+                                              amarrMineralSell[mineral], dodixieMineralSell[mineral], hekMineralSell[mineral], jitaMineralSell[mineral],
+                                              queryTime))
 
             materialRows = []
             for mineral in materialsList:
@@ -585,10 +592,13 @@ class MainWindow(wx.Frame):
                 item.dodixieItemBuy = dodixieItemBuy[item.itemID]
                 item.hekItemBuy = hekItemBuy[item.itemID]
                 item.jitaItemBuy = jitaItemBuy[item.itemID]
+
                 item.amarrItemSell = amarrItemSell[item.itemID]
                 item.dodixieItemSell = dodixieItemSell[item.itemID]
                 item.hekItemSell = hekItemSell[item.itemID]
                 item.jitaItemSell = jitaItemSell[item.itemID]
+
+                item.lastQuery = queryTime
 
                 # Iterate over all of the widgets and their respective variables to fill in values.
                 # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
