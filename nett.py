@@ -18,6 +18,7 @@
 # Author: Tim Cumming aka Elusive One
 # Created: 01/04/14
 
+import time
 import wx
 import sqlite3 as lite
 
@@ -502,6 +503,8 @@ class MainWindow(wx.Frame):
     def onProcess(self, event):
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
         if quickbarList != []:
+            timingMsg = 'Using Local Cache'
+
             # Build a list of item ids to send to Eve-Central.
             idList = []
             for item in quickbarList:
@@ -512,9 +515,20 @@ class MainWindow(wx.Frame):
 
             #print(idList)
             #idList = [4473, 16437...]
-            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Fetching Data from Eve-Central.com...')
+
+            # Start the clock for the fetch from Eve-Central.
+            t = time.clock()
+
+            self.statusbar.SetStatusText('Nett - Fetching Data from Eve-Central.com...')
 
             dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
+
+            fetchTime = ((time.clock() - t) * 1000)  # Timing messages for info and debug.
+
+            self.statusbar.SetStatusText('Nett - Calculating Reprocessed Values...')
+
+            # Restart the clock for processing data.
+            t = time.clock()
 
             for mineral in mineralIDs:
                 materialsList.append(Material(int(mineral), mineralIDs[mineral],
@@ -530,8 +544,6 @@ class MainWindow(wx.Frame):
                 materialRows.append(MaterialRow(mineral.materialName, 'Jita', mineral.jitaBuy, mineral.jitaSell))
 
             self.materialsListCtrl.SetObjects(materialRows)
-
-            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Calculating Reprocessed Values...')
 
             for item in quickbarList:
                 output = reprocess(item.itemID)
@@ -595,7 +607,11 @@ class MainWindow(wx.Frame):
                     widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
                     widget.SetValue('{:,.2f}'.format(vars()[name]))
 
-            self.statusbar.SetStatusText('Welcome to Nett - ' + 'Idle')
+            processTime = ((time.clock() - t) * 1000)
+
+            timingMsg = 'Fetch: %0.2f ms / Process: %0.2f ms' % (fetchTime, processTime)
+
+            self.statusbar.SetStatusText('Nett - Idle - %s' % timingMsg)
 
     def OnAbout(self, e):
         description = """A tool designed for our corporate industrialists to
