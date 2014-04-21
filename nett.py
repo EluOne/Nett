@@ -28,12 +28,6 @@ from common.api import onError, reprocess, fetchItems
 
 from ObjectListView import ObjectListView, ColumnDefn, GroupListView
 
-# System db id numbers
-systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
-# Mineral db id numbers
-mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
-              38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
-
 # This will be the lists for the ui choices on the market.
 quickbarList = []
 materialsList = []
@@ -514,7 +508,7 @@ class MainWindow(wx.Frame):
             for item in quickbarList:
                 idList.append(item.itemID)
             # We'll tag on the mineral query with the item ids to save traffic.
-            for mineral in mineralIDs:
+            for mineral in config.mineralIDs:
                 idList.append(mineral)
 
             #print(idList)
@@ -537,8 +531,8 @@ class MainWindow(wx.Frame):
             # Restart the clock for processing data.
             t = time.clock()
 
-            for mineral in mineralIDs:
-                materialsList.append(Material(int(mineral), mineralIDs[mineral],
+            for mineral in config.mineralIDs:
+                materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
                                               amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
                                               amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
                                               queryTime))
@@ -567,7 +561,7 @@ class MainWindow(wx.Frame):
 
                 # Generate reprocessed values from raw material prices. (Currently not stored)
                 for key in output:
-                    if key in mineralIDs:
+                    if key in config.mineralIDs:
                         reproDodixieBuy = reproDodixieBuy + (int(output[key]) * dodixieBuy[key])
                         reproDodixieSell = reproDodixieSell + (int(output[key]) * dodixieSell[key])
                         reproJitaBuy = reproJitaBuy + (int(output[key]) * jitaBuy[key])

@@ -27,12 +27,6 @@ import xml.etree.ElementTree as etree
 
 import config
 
-# System db id numbers
-systemNames = {30002659: 'Dodixie', 30000142: 'Jita', 30002053: 'Hek', 30002187: 'Amarr'}  # 30002510: 'Rens'
-# Mineral db id numbers
-mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
-              38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
-
 
 def onError(error):
     dlg = wx.MessageDialog(None, 'An error has occurred:\n' + error, '', wx.OK | wx.ICON_ERROR)
@@ -50,13 +44,12 @@ def reprocess(itemID):  # Takes a list of IDs to query the local db or api serve
 
             with con:
                 cur = con.cursor()
-                # TODO: Change this to use ids through out until data is presented to user.
                 statement = "SELECT materialTypeID, quantity FROM invTypeMaterials WHERE typeID = " + str(itemID)
                 cur.execute(statement)
 
                 rows = cur.fetchall()
 
-                # Use the item strings returned to populate the typeNames dictionary.
+                # We are using ids as keys as this can be matched against the mineralID dictionary.
                 for row in rows:
                     minerals.update({int(row[0]): int(row[1])})
 
@@ -103,7 +96,7 @@ def fetchItems(typeIDs):
 
         numIdLists = list(range(len(idList)))
         for x in numIdLists:  # Iterate over all of the id lists generated above.
-            for system in systemNames:
+            for system in config.systemNames:
                 # Item prices by system url:
                 baseUrl = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=%s'
                 apiURL = baseUrl % (idList[x], system)
