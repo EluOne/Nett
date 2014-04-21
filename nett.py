@@ -528,7 +528,7 @@ class MainWindow(wx.Frame):
 
             self.statusbar.SetStatusText('Nett - Fetching Data from Eve-Central.com...')
 
-            dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell = fetchItems(idList)
+            dodixieBuy, dodixieSell, jitaBuy, jitaSell, hekBuy, hekSell, amarrBuy, amarrSell = fetchItems(idList)
 
             fetchTime = ((time.clock() - t) * 1000)  # Timing messages for info and debug.
 
@@ -539,8 +539,8 @@ class MainWindow(wx.Frame):
 
             for mineral in mineralIDs:
                 materialsList.append(Material(int(mineral), mineralIDs[mineral],
-                                              amarrMineralBuy[mineral], dodixieMineralBuy[mineral], hekMineralBuy[mineral], jitaMineralBuy[mineral],
-                                              amarrMineralSell[mineral], dodixieMineralSell[mineral], hekMineralSell[mineral], jitaMineralSell[mineral],
+                                              amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
+                                              amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
                                               queryTime))
 
             materialRows = []
@@ -568,14 +568,14 @@ class MainWindow(wx.Frame):
                 # Generate reprocessed values from raw material prices. (Currently not stored)
                 for key in output:
                     if key in mineralIDs:
-                        reproDodixieBuy = reproDodixieBuy + (int(output[key]) * dodixieMineralBuy[key])
-                        reproDodixieSell = reproDodixieSell + (int(output[key]) * dodixieMineralSell[key])
-                        reproJitaBuy = reproJitaBuy + (int(output[key]) * jitaMineralBuy[key])
-                        reproJitaSell = reproJitaSell + (int(output[key]) * jitaMineralSell[key])
-                        reproAmarrBuy = reproAmarrBuy + (int(output[key]) * amarrMineralBuy[key])
-                        reproAmarrSell = reproAmarrSell + (int(output[key]) * amarrMineralSell[key])
-                        reproHekBuy = reproHekBuy + (int(output[key]) * hekMineralBuy[key])
-                        reproHekSell = reproHekSell + (int(output[key]) * hekMineralSell[key])
+                        reproDodixieBuy = reproDodixieBuy + (int(output[key]) * dodixieBuy[key])
+                        reproDodixieSell = reproDodixieSell + (int(output[key]) * dodixieSell[key])
+                        reproJitaBuy = reproJitaBuy + (int(output[key]) * jitaBuy[key])
+                        reproJitaSell = reproJitaSell + (int(output[key]) * jitaSell[key])
+                        reproAmarrBuy = reproAmarrBuy + (int(output[key]) * amarrBuy[key])
+                        reproAmarrSell = reproAmarrSell + (int(output[key]) * amarrSell[key])
+                        reproHekBuy = reproHekBuy + (int(output[key]) * hekBuy[key])
+                        reproHekSell = reproHekSell + (int(output[key]) * hekSell[key])
 
                 if wx.FindWindowByName("module_%s" % int(item.itemID)):
                     continue
@@ -588,15 +588,15 @@ class MainWindow(wx.Frame):
                 # on the fly the easiest way to identify the widgets is by their unique
                 # names assigned on creation.
 
-                item.amarrItemBuy = amarrItemBuy[item.itemID]
-                item.dodixieItemBuy = dodixieItemBuy[item.itemID]
-                item.hekItemBuy = hekItemBuy[item.itemID]
-                item.jitaItemBuy = jitaItemBuy[item.itemID]
+                item.amarrItemBuy = amarrBuy[item.itemID]
+                item.dodixieItemBuy = dodixieBuy[item.itemID]
+                item.hekItemBuy = hekBuy[item.itemID]
+                item.jitaItemBuy = jitaBuy[item.itemID]
 
-                item.amarrItemSell = amarrItemSell[item.itemID]
-                item.dodixieItemSell = dodixieItemSell[item.itemID]
-                item.hekItemSell = hekItemSell[item.itemID]
-                item.jitaItemSell = jitaItemSell[item.itemID]
+                item.amarrItemSell = amarrSell[item.itemID]
+                item.dodixieItemSell = dodixieSell[item.itemID]
+                item.hekItemSell = hekSell[item.itemID]
+                item.jitaItemSell = jitaSell[item.itemID]
 
                 item.lastQuery = queryTime
 

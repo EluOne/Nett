@@ -34,18 +34,6 @@ mineralIDs = {34: 'Tritanium', 35: 'Pyerite', 36: 'Mexallon', 37: 'Isogen',
               38: 'Nocxium', 39: 'Zydrine', 40: 'Megacyte', 11399: 'Morphite'}
 
 
-class Salvage(object):
-    def __init__(self, itemID, itemName, itemBuyValue, itemSellValue, reprocessBuyValue, reprocessSellValue, action):
-        self.itemID = itemID
-        self.itemName = itemName
-        # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
-        self.itemBuyValue = '{:,.2f}'.format(itemBuyValue)
-        self.itemSellValue = '{:,.2f}'.format(itemSellValue)
-        self.reprocessBuyValue = '{:,.2f}'.format(reprocessBuyValue)
-        self.reprocessSellValue = '{:,.2f}'.format(reprocessSellValue)
-        self.action = action
-
-
 def onError(error):
     dlg = wx.MessageDialog(None, 'An error has occurred:\n' + error, '', wx.OK | wx.ICON_ERROR)
     dlg.ShowModal()  # Show it
@@ -84,24 +72,14 @@ def reprocess(itemID):  # Takes a list of IDs to query the local db or api serve
 def fetchItems(typeIDs):
     # Set the market prices from Eve Central will look like:
     # dodixieItemBuy = {3616: 26966195.29, 4473: 11158.6}
-    dodixieItemBuy = {}
-    dodixieItemSell = {}
-    jitaItemBuy = {}
-    jitaItemSell = {}
-    hekItemBuy = {}
-    hekItemSell = {}
-    amarrItemBuy = {}
-    amarrItemSell = {}
-    # Set the market prices from Eve Central will look like:
-    # dodixieMineralBuy = {34: 4.65, 35: 11.14, 36: 43.82, 37: 120.03, 38: 706.93, 39: 727.19, 40: 1592.10}
-    dodixieMineralBuy = {}
-    dodixieMineralSell = {}
-    jitaMineralBuy = {}
-    jitaMineralSell = {}
-    hekMineralBuy = {}
-    hekMineralSell = {}
-    amarrMineralBuy = {}
-    amarrMineralSell = {}
+    dodixieBuy = {}
+    dodixieSell = {}
+    jitaBuy = {}
+    jitaSell = {}
+    hekBuy = {}
+    hekSell = {}
+    amarrBuy = {}
+    amarrSell = {}
 
     if typeIDs != []:
         # Calculate the number of ids we have. We'll use a maximum of 100 IDs per query.
@@ -141,32 +119,18 @@ def fetchItems(typeIDs):
                         ids = child.attrib
                         buy = child.find('buy')
                         sell = child.find('sell')
-                        if int(ids['id']) in mineralIDs:  # Match vs mineralIDs first as all are in the typeIDs list now.
-                            if system == 30002659:  # Dodi
-                                dodixieMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                                dodixieMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30000142:  # Jita
-                                jitaMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                                jitaMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30002053:  # Hek
-                                hekMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                                hekMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30002187:  # Amarr
-                                amarrMineralBuy[int(ids['id'])] = float(buy.find('max').text)
-                                amarrMineralSell[int(ids['id'])] = float(sell.find('min').text)
-                        elif int(ids['id']) in typeIDs:  # Catch the rest of the ids in the typeIDs list.
-                            if system == 30002659:  # Dodi
-                                dodixieItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                                dodixieItemSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30000142:  # Jita
-                                jitaItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                                jitaItemSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30002053:  # Hek
-                                hekItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                                hekItemSell[int(ids['id'])] = float(sell.find('min').text)
-                            elif system == 30002187:  # Amarr
-                                amarrItemBuy[int(ids['id'])] = float(buy.find('max').text)
-                                amarrItemSell[int(ids['id'])] = float(sell.find('min').text)
+                        if system == 30002659:  # Dodi
+                            dodixieBuy[int(ids['id'])] = float(buy.find('max').text)
+                            dodixieSell[int(ids['id'])] = float(sell.find('min').text)
+                        elif system == 30000142:  # Jita
+                            jitaBuy[int(ids['id'])] = float(buy.find('max').text)
+                            jitaSell[int(ids['id'])] = float(sell.find('min').text)
+                        elif system == 30002053:  # Hek
+                            hekBuy[int(ids['id'])] = float(buy.find('max').text)
+                            hekSell[int(ids['id'])] = float(sell.find('min').text)
+                        elif system == 30002187:  # Amarr
+                            amarrBuy[int(ids['id'])] = float(buy.find('max').text)
+                            amarrSell[int(ids['id'])] = float(sell.find('min').text)
 
                 except requests.exceptions.HTTPError as err:  # An HTTP error occurred.
                     error = ('HTTP Error: %s %s\n' % (str(err.code), str(err.reason)))  # Error String
@@ -181,4 +145,4 @@ def fetchItems(typeIDs):
                     error = ('Generic Exception: ' + traceback.format_exc())  # Error String
                     onError(error)
 
-    return dodixieMineralBuy, dodixieMineralSell, jitaMineralBuy, jitaMineralSell, hekMineralBuy, hekMineralSell, amarrMineralBuy, amarrMineralSell, dodixieItemBuy, dodixieItemSell, jitaItemBuy, jitaItemSell, hekItemBuy, hekItemSell, amarrItemBuy, amarrItemSell
+    return dodixieBuy, dodixieSell, jitaBuy, jitaSell, hekBuy, hekSell, amarrBuy, amarrSell
