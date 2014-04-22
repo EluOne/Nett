@@ -500,13 +500,19 @@ class MainWindow(wx.Frame):
 
     def onProcess(self, event):
         # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
+        currentTime = datetime.datetime.utcnow().replace(microsecond=0)
+
         if quickbarList != []:
             timingMsg = 'Using Local Cache'
 
             # Build a list of item ids to send to Eve-Central.
             idList = []
             for item in quickbarList:
-                idList.append(item.itemID)
+                if item.lastQuery == 0:
+                    idList.append(item.itemID)
+                elif (currentTime - item.lastQuery).seconds > config.queryLimit:
+                    idList.append(item.itemID)
+
             # We'll tag on the mineral query with the item ids to save traffic.
             for mineral in config.mineralIDs:
                 idList.append(mineral)
