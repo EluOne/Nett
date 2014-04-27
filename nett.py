@@ -42,6 +42,8 @@ class Item(object):
     def __init__(self, itemID, itemName, marketGroupID,
                  amarrItemBuy, dodixieItemBuy, hekItemBuy, jitaItemBuy,
                  amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell,
+                 reproAmarrBuy, reproDodixieBuy, reproHekBuy, reproJitaBuy,
+                 reproAmarrSell, reproDodixieSell, reproHekSell, reproJitaSell,
                  lastQuery, widgetKey):
         self.itemID = itemID
         self.itemName = itemName
@@ -56,6 +58,16 @@ class Item(object):
         self.dodixieItemSell = dodixieItemSell
         self.hekItemSell = hekItemSell
         self.jitaItemSell = jitaItemSell
+        # Reprocessed Market Buy Order Prices
+        self.reproAmarrBuy = reproAmarrBuy
+        self.reproDodixieBuy = reproDodixieBuy
+        self.reproHekBuy = reproHekBuy
+        self.reproJitaBuy = reproJitaBuy
+        # Reprocessed Market Sell Order Prices
+        self.reproAmarrSell = reproAmarrSell
+        self.reproDodixieSell = reproDodixieSell
+        self.reproHekSell = reproHekSell
+        self.reproJitaSell = reproJitaSell
         # Use a per item time stamp to handle query limiting to the API server.
         self.lastQuery = lastQuery
         # Due to limits on 32bit machines we can't use the item IDs as the basis for widget IDs
@@ -65,7 +77,6 @@ class Item(object):
 # This is the class where we will store material data from the database and Eve-Central queries.
 # I have decided to use the name Material instead of Minerals as the upcoming changes to reprocessing
 # will affect the returned outcome to include recyclable parts.
-# This will probably end up being removed as it uses nearly all the same fields as above.
 class Material(object):
     def __init__(self, materialID, materialName,
                  amarrBuy, dodixieBuy, hekBuy, jitaBuy,
@@ -119,7 +130,8 @@ class MainWindow(wx.Frame):
                     rows = cur.fetchall()
 
                     for row in rows:
-                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                        # The data above taken from the db then all zeros for the buy/sell values (x16), query time and widget key.
+                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
                     # This query will hold all of the market group ID to name relations in a dictionary for ease.
                     groupStatement = "SELECT marketGroupID, marketGroupName FROM invMarketGroups WHERE marketGroupID >= 0 ORDER BY marketGroupID;"
@@ -498,8 +510,38 @@ class MainWindow(wx.Frame):
 
         self.quickbarListCtrl.SetObjects(quickbarList)
 
+    def updateDisplay(self, idList):
+        """Send Values to the GUI elements. as we have added to the wx widgets
+        on the fly the easiest way to identify the widgets is by their unique
+        names assigned on creation."""
+        for item in idList:
+            if wx.FindWindowByName("module_%s" % int(item.itemID)):
+                continue
+            else:
+                self.numWidgets += 1
+                item.widgetKey = self.numWidgets
+                self.onAddWidget(int(item.itemID), item.itemName, item.widgetKey)
+
+            # Iterate over all of the widgets and their respective variables to fill in values.
+            # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
+
+            # Item Values
+            widgetNames = ['amarrItemBuy', 'dodixieItemBuy', 'hekItemBuy', 'jitaItemBuy',
+                           'amarrItemSell', 'dodixieItemSell', 'hekItemSell', 'jitaItemSell']
+            for name in widgetNames:
+                widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
+                widget.SetValue('{:,.2f}'.format(vars(item)[name]))
+
+            # Reprocess Values
+            widgetNames = ['reproAmarrBuy', 'reproDodixieBuy', 'reproHekBuy', 'reproJitaBuy',
+                           'reproAmarrSell', 'reproDodixieSell', 'reproHekSell', 'reproJitaSell']
+            for name in widgetNames:
+                widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
+                widget.SetValue('{:,.2f}'.format(vars(item)[name]))
+
     def onProcess(self, event):
-        # TODO: Add a query limit of some form, so we are nice to the Eve-Central servers.
+        """Generate a list of item and material ids to send to the Eve-Central servers
+        then use the returned data to generate our prices"""
         currentTime = datetime.datetime.utcnow().replace(microsecond=0)
 
         if quickbarList != []:
@@ -514,10 +556,17 @@ class MainWindow(wx.Frame):
                     idList.append(item.itemID)
 
             # We'll tag on the mineral query with the item ids to save traffic.
-            for mineral in config.mineralIDs:
-                idList.append(mineral)
+            if materialsList != []:
+                for mat in materialsList:
+                    if mat.lastQuery == 0:
+                        idList.append(mat.materialID)
+                    elif (currentTime - mat.lastQuery).seconds > config.queryLimit:
+                        idList.append(mat.materialID)
+            else:
+                for mineral in config.mineralIDs:
+                    idList.append(mineral)
 
-            #print(idList)
+            print(idList)
             #idList = [4473, 16437...]
 
             # This is for time stamping our out bound queries so we don't request data we already have that is recent.
@@ -532,17 +581,28 @@ class MainWindow(wx.Frame):
 
             fetchTime = ((time.clock() - t) * 1000)  # Timing messages for info and debug.
 
-            self.statusbar.SetStatusText('Nett - Calculating Reprocessed Values...')
-
-            # Restart the clock for processing data.
-            t = time.clock()
-
+            # This should now only add to the materialsList if the id is found in the query.
+            # TODO: They will all exipire at the same time, but the logic needs expanding to update the existing values.
             for mineral in config.mineralIDs:
-                materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
-                                              amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
-                                              amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
-                                              queryTime))
+                if mineral in idList:
+                    materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
+                                                  amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
+                                                  amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
+                                                  queryTime))
 
+            # Once we have fetched material data its now stored in objects in materialsList
+            # So we need to make a quick dictionary like a primary key to match list positions to mineral ids.
+            materialDict = {}
+            numMats = list(range(len(materialsList)))
+
+            if numMats != []:
+                for x in numMats:
+                    #materialDict = {materialId: materialsList[index], ...}
+                    materialDict[materialsList[x].materialID] = x
+
+            print(materialDict)
+
+            # TODO: Move this loop somewhere more logical.
             materialRows = []
             for mineral in materialsList:
                 materialRows.append(MaterialRow(mineral.materialName, 'Amarr', mineral.amarrBuy, mineral.amarrSell))
@@ -552,74 +612,67 @@ class MainWindow(wx.Frame):
 
             self.materialsListCtrl.SetObjects(materialRows)
 
+            self.statusbar.SetStatusText('Nett - Calculating Reprocessed Values...')
+
+            # Restart the clock for processing data.
+            t = time.clock()
+
             for item in quickbarList:
-                output = reprocess(item.itemID)
-                #print(output)
+                if item.itemID in idList:
+                    output = reprocess(item.itemID)
+                    #print(output)
 
-                reproDodixieBuy = 0  # Fullfilling Buy orders
-                reproDodixieSell = 0  # Placing Sell orders
-                reproJitaBuy = 0  # Fullfilling Buy orders
-                reproJitaSell = 0  # Placing Sell orders
-                reproAmarrBuy = 0  # Fullfilling Buy orders
-                reproAmarrSell = 0  # Placing Sell orders
-                reproHekBuy = 0  # Fullfilling Buy orders
-                reproHekSell = 0  # Placing Sell orders
+                    reproAmarrBuy = 0  # Fullfilling Buy orders
+                    reproAmarrSell = 0  # Placing Sell orders
+                    reproDodixieBuy = 0  # Fullfilling Buy orders
+                    reproDodixieSell = 0  # Placing Sell orders
+                    reproHekBuy = 0  # Fullfilling Buy orders
+                    reproHekSell = 0  # Placing Sell orders
+                    reproJitaBuy = 0  # Fullfilling Buy orders
+                    reproJitaSell = 0  # Placing Sell orders
 
-                # Generate reprocessed values from raw material prices. (Currently not stored)
-                for key in output:
-                    if key in config.mineralIDs:
-                        reproDodixieBuy = reproDodixieBuy + (int(output[key]) * dodixieBuy[key])
-                        reproDodixieSell = reproDodixieSell + (int(output[key]) * dodixieSell[key])
-                        reproJitaBuy = reproJitaBuy + (int(output[key]) * jitaBuy[key])
-                        reproJitaSell = reproJitaSell + (int(output[key]) * jitaSell[key])
-                        reproAmarrBuy = reproAmarrBuy + (int(output[key]) * amarrBuy[key])
-                        reproAmarrSell = reproAmarrSell + (int(output[key]) * amarrSell[key])
-                        reproHekBuy = reproHekBuy + (int(output[key]) * hekBuy[key])
-                        reproHekSell = reproHekSell + (int(output[key]) * hekSell[key])
+                    # Generate reprocessed values from raw material prices. (Currently not stored)
+                    for key in output:
+                        if key in config.mineralIDs:
+                            # We are now using the materialDict so we can use previously fetched data in the materialsList.
+                            reproAmarrBuy = reproAmarrBuy + (int(output[key]) * materialsList[materialDict[key]].amarrBuy)
+                            reproAmarrSell = reproAmarrSell + (int(output[key]) * materialsList[materialDict[key]].amarrSell)
+                            reproDodixieBuy = reproDodixieBuy + (int(output[key]) * materialsList[materialDict[key]].dodixieBuy)
+                            reproDodixieSell = reproDodixieSell + (int(output[key]) * materialsList[materialDict[key]].dodixieSell)
+                            reproHekBuy = reproHekBuy + (int(output[key]) * materialsList[materialDict[key]].hekBuy)
+                            reproHekSell = reproHekSell + (int(output[key]) * materialsList[materialDict[key]].hekSell)
+                            reproJitaBuy = reproJitaBuy + (int(output[key]) * materialsList[materialDict[key]].jitaBuy)
+                            reproJitaSell = reproJitaSell + (int(output[key]) * materialsList[materialDict[key]].jitaSell)
 
-                if wx.FindWindowByName("module_%s" % int(item.itemID)):
-                    continue
-                else:
-                    self.numWidgets += 1
-                    item.widgetKey = self.numWidgets
-                    self.onAddWidget(int(item.itemID), item.itemName, item.widgetKey)
+                    # Send Values to the quickbarList objects.
 
-                # Send Values to the GUI elements. as we have added to the wx widgets
-                # on the fly the easiest way to identify the widgets is by their unique
-                # names assigned on creation.
+                    item.amarrItemBuy = amarrBuy[item.itemID]
+                    item.dodixieItemBuy = dodixieBuy[item.itemID]
+                    item.hekItemBuy = hekBuy[item.itemID]
+                    item.jitaItemBuy = jitaBuy[item.itemID]
 
-                item.amarrItemBuy = amarrBuy[item.itemID]
-                item.dodixieItemBuy = dodixieBuy[item.itemID]
-                item.hekItemBuy = hekBuy[item.itemID]
-                item.jitaItemBuy = jitaBuy[item.itemID]
+                    item.amarrItemSell = amarrSell[item.itemID]
+                    item.dodixieItemSell = dodixieSell[item.itemID]
+                    item.hekItemSell = hekSell[item.itemID]
+                    item.jitaItemSell = jitaSell[item.itemID]
 
-                item.amarrItemSell = amarrSell[item.itemID]
-                item.dodixieItemSell = dodixieSell[item.itemID]
-                item.hekItemSell = hekSell[item.itemID]
-                item.jitaItemSell = jitaSell[item.itemID]
+                    item.reproAmarrBuy = reproAmarrBuy
+                    item.reproDodixieBuy = reproDodixieBuy
+                    item.reproHekBuy = reproHekBuy
+                    item.reproJitaBuy = reproJitaBuy
 
-                item.lastQuery = queryTime
+                    item.reproAmarrSell = reproAmarrSell
+                    item.reproDodixieSell = reproDodixieSell
+                    item.reproHekSell = reproHekSell
+                    item.reproJitaSell = reproJitaSell
 
-                # Iterate over all of the widgets and their respective variables to fill in values.
-                # '{:,.2f}'.format(value) Uses the Format Specification Mini-Language to produce more human friendly output.
-
-                # Item Values
-                widgetNames = ['amarrItemBuy', 'dodixieItemBuy', 'hekItemBuy', 'jitaItemBuy',
-                               'amarrItemSell', 'dodixieItemSell', 'hekItemSell', 'jitaItemSell']
-                for name in widgetNames:
-                    widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
-                    widget.SetValue('{:,.2f}'.format(vars(item)[name]))
-
-                # Reprocess Values
-                widgetNames = ['reproAmarrBuy', 'reproDodixieBuy', 'reproHekBuy', 'reproJitaBuy',
-                               'reproAmarrSell', 'reproDodixieSell', 'reproHekSell', 'reproJitaSell']
-                for name in widgetNames:
-                    widget = wx.FindWindowByName("%s_%s" % (name, int(item.itemID)))
-                    widget.SetValue('{:,.2f}'.format(vars()[name]))
+                    item.lastQuery = queryTime
 
             processTime = ((time.clock() - t) * 1000)
 
             timingMsg = 'Fetch: %0.2f ms / Process: %0.2f ms' % (fetchTime, processTime)
+
+            self.updateDisplay(quickbarList)
 
             self.statusbar.SetStatusText('Nett - Idle - %s' % timingMsg)
 
