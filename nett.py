@@ -35,6 +35,7 @@ itemList = []
 marketGroups = {}
 marketRelations = {}
 numIDs = 0
+materialDict = {}
 
 
 # This is the class where we will store item data from the database and Eve-Central queries.
@@ -566,7 +567,7 @@ class MainWindow(wx.Frame):
                 for mineral in config.mineralIDs:
                     idList.append(mineral)
 
-            print(idList)
+            #print(idList)
             #idList = [4473, 16437...]
 
             # This is for time stamping our out bound queries so we don't request data we already have that is recent.
@@ -581,18 +582,30 @@ class MainWindow(wx.Frame):
 
             fetchTime = ((time.clock() - t) * 1000)  # Timing messages for info and debug.
 
-            # This should now only add to the materialsList if the id is found in the query.
-            # TODO: They will all exipire at the same time, but the logic needs expanding to update the existing values.
+            # Check that our mineral prices are updated if returned for the query.
             for mineral in config.mineralIDs:
+                # Check if it was in the idList for the Eve-Central query.
                 if mineral in idList:
-                    materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
-                                                  amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
-                                                  amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
-                                                  queryTime))
+                    # Check if we already have some data for this id
+                    if mineral in materialDict:
+                        # Buy values updates via materialDict to materialsList
+                        materialsList[materialDict[mineral]].amarrBuy = amarrBuy[mineral]
+                        materialsList[materialDict[mineral]].dodixieBuy = dodixieBuy[mineral]
+                        materialsList[materialDict[mineral]].hekBuy = hekBuy[mineral]
+                        materialsList[materialDict[mineral]].jitaBuy = jitaBuy[mineral]
+                        # Sell values updates via materialDict to materialsList
+                        materialsList[materialDict[mineral]].amarrSell = amarrSell[mineral]
+                        materialsList[materialDict[mineral]].dodixieSell = dodixieSell[mineral]
+                        materialsList[materialDict[mineral]].hekSell = hekSell[mineral]
+                        materialsList[materialDict[mineral]].jitaSell = jitaSell[mineral]
+                    else:
+                        materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
+                                              amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
+                                              amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
+                                              queryTime))
 
             # Once we have fetched material data its now stored in objects in materialsList
             # So we need to make a quick dictionary like a primary key to match list positions to mineral ids.
-            materialDict = {}
             numMats = list(range(len(materialsList)))
 
             if numMats != []:
@@ -600,7 +613,7 @@ class MainWindow(wx.Frame):
                     #materialDict = {materialId: materialsList[index], ...}
                     materialDict[materialsList[x].materialID] = x
 
-            print(materialDict)
+            #print(materialDict)
 
             # TODO: Move this loop somewhere more logical.
             materialRows = []
