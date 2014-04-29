@@ -18,6 +18,8 @@
 # Author: Tim Cumming aka Elusive One
 # Created: 01/04/14
 
+import os
+import pickle
 import time
 import datetime
 import wx
@@ -235,6 +237,13 @@ class MainWindow(wx.Frame):
         ])
 
         self.materialsListCtrl.SetSortColumn(self.materialsListCtrl.columns[4])
+
+        # Lets try to load up our previous quickbarList from the cache file.
+        if (os.path.isfile('nett.cache')):
+            cacheFile = open('nett.cache', 'r')
+            quickbarList = pickle.load(cacheFile)
+            cacheFile.close()
+            self.quickbarListCtrl.SetObjects(quickbarList)
 
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -610,7 +619,7 @@ class MainWindow(wx.Frame):
 
             if numMats != []:
                 for x in numMats:
-                    #materialDict = {materialId: materialsList[index], ...}
+                    #materialDict = {materialId: materialsList[index], 34: 0, 35: 1, ...}
                     materialDict[materialsList[x].materialID] = x
 
             #print(materialDict)
@@ -688,6 +697,12 @@ class MainWindow(wx.Frame):
             self.updateDisplay(quickbarList)
 
             self.statusbar.SetStatusText('Nett - Idle - %s' % timingMsg)
+
+            # Save the quickbarList to the cache file.
+            if quickbarList != []:
+                cacheFile = open('nett.cache', 'w')
+                pickle.dump(quickbarList, cacheFile)
+                cacheFile.close()
 
     def OnAbout(self, e):
         description = """A tool designed for our corporate industrialists to
