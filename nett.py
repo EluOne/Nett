@@ -110,6 +110,13 @@ class MaterialRow(object):
         self.materialSell = '{:,.2f}'.format(materialSell)
 
 
+# Lets try to load up our previous quickbarList from the cache file.
+if (os.path.isfile('nett.cache')):
+    cacheFile = open('nett.cache', 'r')
+    quickbarList = pickle.load(cacheFile)
+    cacheFile.close()
+
+
 class MainWindow(wx.Frame):
     def __init__(self, *args, **kwds):
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
@@ -238,13 +245,6 @@ class MainWindow(wx.Frame):
 
         self.materialsListCtrl.SetSortColumn(self.materialsListCtrl.columns[4])
 
-        # Lets try to load up our previous quickbarList from the cache file.
-        if (os.path.isfile('nett.cache')):
-            cacheFile = open('nett.cache', 'r')
-            quickbarList = pickle.load(cacheFile)
-            cacheFile.close()
-            self.quickbarListCtrl.SetObjects(quickbarList)
-
     def __do_layout(self):
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
         self.itemsSizer = wx.BoxSizer(wx.VERTICAL)
@@ -285,6 +285,10 @@ class MainWindow(wx.Frame):
 
         # initialize the marketTree
         self.buildTree('Market')
+
+        # If we've loaded up a cache file send the data to the UI.
+        if quickbarList != []:
+            self.quickbarListCtrl.SetObjects(quickbarList)
 
     def onExpand(self, event):
         '''onExpand is called when the user expands a node on the tree
