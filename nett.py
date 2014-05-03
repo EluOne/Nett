@@ -198,6 +198,9 @@ class MainWindow(wx.Frame):
         self.menuAbout = wx.MenuItem(self.fileMenu, wx.ID_ABOUT, "&About", "", wx.ITEM_NORMAL)
         self.fileMenu.AppendItem(self.menuAbout)
 
+        self.menuExport = wx.MenuItem(self.fileMenu, wx.ID_SAVE, "&Export", " Export Price Data", wx.ITEM_NORMAL)
+        self.fileMenu.AppendItem(self.menuExport)
+
         self.menuExit = wx.MenuItem(self.fileMenu, wx.ID_EXIT, "E&xit", "", wx.ITEM_NORMAL)
         self.fileMenu.AppendItem(self.menuExit)
 
@@ -206,6 +209,7 @@ class MainWindow(wx.Frame):
         # Menu Bar end
 
         # Menu events.
+        self.Bind(wx.EVT_MENU, self.OnExport, self.menuExport)
         self.Bind(wx.EVT_MENU, self.OnExit, self.menuExit)
         self.Bind(wx.EVT_MENU, self.OnAbout, self.menuAbout)
 
@@ -491,6 +495,17 @@ class MainWindow(wx.Frame):
                 self.itemsSizer.Remove(parent)
         self.Layout()
 
+    def updateCache(self):
+        # Update the quickbarList to the cache file.
+        if quickbarList != []:
+            cacheFile = open('nett.cache', 'w')
+            pickle.dump(quickbarList, cacheFile)
+            cacheFile.close()
+        else:
+            # Delete the cache file when the quickbarList is empty.
+            if (os.path.isfile('nett.cache')):
+                os.remove('nett.cache')
+
     def onAdd(self, event):
         # Get current selection data from tree ctrl
         currentSelection = self.marketTree.GetSelection()
@@ -507,6 +522,7 @@ class MainWindow(wx.Frame):
                         quickbarList.append(item)
 
         self.quickbarListCtrl.SetObjects(quickbarList)
+        self.updateCache()
 
     def onRemove(self, event):
         numItemRows = list(range(len(quickbarList)))
@@ -521,8 +537,11 @@ class MainWindow(wx.Frame):
             for z in quickbarList[:]:
                 if z == 'deleted':
                     quickbarList.remove(z)
+                    # Recreate the iteration list so the loop can continue if removing multiple items.
+                    numItemRows = list(range(len(quickbarList)))
 
         self.quickbarListCtrl.SetObjects(quickbarList)
+        self.updateCache()
 
     def updateDisplay(self, idList):
         """Send Values to the GUI elements. as we have added to the wx widgets
@@ -702,11 +721,40 @@ class MainWindow(wx.Frame):
 
             self.statusbar.SetStatusText('Nett - Idle - %s' % timingMsg)
 
-            # Save the quickbarList to the cache file.
-            if quickbarList != []:
-                cacheFile = open('nett.cache', 'w')
-                pickle.dump(quickbarList, cacheFile)
-                cacheFile.close()
+            # Save the updated quickbarList to the cache file.
+            self.updateCache()
+
+    def OnExport(self, event):
+        # Export the contents of the Quickbar as csv.
+        if quickbarList != []:
+            self.dirname = ''
+            wildcard = "Comma Separated (*.csv)|*.csv|All files (*.*)|*.*"
+            dlg = wx.FileDialog(self, 'Export Price Data to File', self.dirname, 'export.csv', wildcard, wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+            if dlg.ShowModal() == wx.ID_OK:
+                path = dlg.GetPath()
+                f = file(path, 'w')
+                """ Item(itemID, itemName, marketGroupID,
+                         amarrItemBuy, dodixieItemBuy, hekItemBuy, jitaItemBuy,
+                         amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell,
+                         reproAmarrBuy, reproDodixieBuy, reproHekBuy, reproJitaBuy,
+                         reproAmarrSell, reproDodixieSell, reproHekSell, reproJitaSell)"""
+                columns = ('Item Name', 'Amarr Market Buy Orders', 'Amarr Market Sell Orders', 'Amarr Material Buy Orders', 'Amarr Material Sell Orders',
+                              'Dodixie Market Buy Orders', 'Dodixie Market Sell Orders', 'Dodixie Material Buy Orders', 'Dodixie Material Sell Orders',
+                              'Hek Market Buy Orders', 'Hek Market Sell Orders', 'Hek Material Buy Orders', 'Hek Material Sell Orders',
+                              'Jita Market Buy Orders', 'Jita Market Sell Orders', 'Jita Material Buy Orders', 'Jita Material Sell Orders')
+
+                dataExport = ('%s%s' % (','.join(columns), '\n'))
+                for row in quickbarList:
+                    dataExport = ('%s%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' % (dataExport, row.itemName,
+                                                             row.amarrItemBuy, row.amarrItemSell, row.reproAmarrBuy, row.reproAmarrSell,
+                                                             row.dodixieItemBuy, row.dodixieItemSell, row.reproDodixieBuy, row.reproDodixieSell,
+                                                             row.hekItemBuy, row.hekItemSell, row.reproHekBuy, row.reproHekSell,
+                                                             row.jitaItemBuy, row.jitaItemSell, row.reproJitaBuy, row.reproJitaSell))
+                f.write(dataExport)
+                f.close()
+            dlg.Destroy()
+        else:
+            onError('The Quickbar list is empty. There is no data to export yet.')
 
     def OnAbout(self, e):
         description = """A tool designed for our corporate industrialists to
