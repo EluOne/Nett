@@ -27,6 +27,7 @@ import sqlite3 as lite
 
 import config
 from common.api import onError, reprocess, fetchItems
+from common.classes import Item, Material, MaterialRow
 
 from ObjectListView import ObjectListView, ColumnDefn, GroupListView
 
@@ -38,76 +39,6 @@ marketGroups = {}
 marketRelations = {}
 numIDs = 0
 materialDict = {}
-
-
-# This is the class where we will store item data from the database and Eve-Central queries.
-class Item(object):
-    def __init__(self, itemID, itemName, marketGroupID,
-                 amarrItemBuy, dodixieItemBuy, hekItemBuy, jitaItemBuy,
-                 amarrItemSell, dodixieItemSell, hekItemSell, jitaItemSell,
-                 reproAmarrBuy, reproDodixieBuy, reproHekBuy, reproJitaBuy,
-                 reproAmarrSell, reproDodixieSell, reproHekSell, reproJitaSell,
-                 lastQuery, widgetKey):
-        self.itemID = itemID
-        self.itemName = itemName
-        self.marketGroupID = marketGroupID
-        # Market Buy Order Prices
-        self.amarrItemBuy = amarrItemBuy
-        self.dodixieItemBuy = dodixieItemBuy
-        self.hekItemBuy = hekItemBuy
-        self.jitaItemBuy = jitaItemBuy
-        # Market Sell Order Prices
-        self.amarrItemSell = amarrItemSell
-        self.dodixieItemSell = dodixieItemSell
-        self.hekItemSell = hekItemSell
-        self.jitaItemSell = jitaItemSell
-        # Reprocessed Market Buy Order Prices
-        self.reproAmarrBuy = reproAmarrBuy
-        self.reproDodixieBuy = reproDodixieBuy
-        self.reproHekBuy = reproHekBuy
-        self.reproJitaBuy = reproJitaBuy
-        # Reprocessed Market Sell Order Prices
-        self.reproAmarrSell = reproAmarrSell
-        self.reproDodixieSell = reproDodixieSell
-        self.reproHekSell = reproHekSell
-        self.reproJitaSell = reproJitaSell
-        # Use a per item time stamp to handle query limiting to the API server.
-        self.lastQuery = lastQuery
-        # Due to limits on 32bit machines we can't use the item IDs as the basis for widget IDs
-        self.widgetKey = widgetKey
-
-
-# This is the class where we will store material data from the database and Eve-Central queries.
-# I have decided to use the name Material instead of Minerals as the upcoming changes to reprocessing
-# will affect the returned outcome to include recyclable parts.
-class Material(object):
-    def __init__(self, materialID, materialName,
-                 amarrBuy, dodixieBuy, hekBuy, jitaBuy,
-                 amarrSell, dodixieSell, hekSell, jitaSell,
-                 lastQuery):
-        self.materialID = materialID
-        self.materialName = materialName
-        # Market Buy Order Prices
-        self.amarrBuy = amarrBuy
-        self.dodixieBuy = dodixieBuy
-        self.hekBuy = hekBuy
-        self.jitaBuy = jitaBuy
-        # Market Sell Order Prices
-        self.amarrSell = amarrSell
-        self.dodixieSell = dodixieSell
-        self.hekSell = hekSell
-        self.jitaSell = jitaSell
-        # Use a per item time stamp to handle query limiting to the API server.
-        self.lastQuery = lastQuery
-
-
-# This class is just for the display of material prices in the materialsListCtrl.
-class MaterialRow(object):
-    def __init__(self, materialName, systemName, materialBuy, materialSell):
-        self.materialName = materialName
-        self.systemName = systemName
-        self.materialBuy = '{:,.2f}'.format(materialBuy)
-        self.materialSell = '{:,.2f}'.format(materialSell)
 
 
 # Lets try to load up our previous quickbarList from the cache file.
@@ -390,7 +321,6 @@ class MainWindow(wx.Frame):
         '''onAddWidget will add widgets into the right scrolling
         panel as required to show the number of items prices'''
         # Lets try add to the right panel.
-        #self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, wx.ID_ANY, (str(moduleName)), name="module_%s" % moduleID)
         self.moduleSizer_1_staticbox = wx.StaticBox(self.rightPanel, int('100%s' % widgetKey), (str(moduleName)), name="module_%s" % moduleID)
         self.moduleSizer_1_staticbox.Lower()
         moduleSizer_1 = wx.StaticBoxSizer(self.moduleSizer_1_staticbox, wx.VERTICAL)
@@ -525,6 +455,7 @@ class MainWindow(wx.Frame):
         self.updateCache()
 
     def onRemove(self, event):
+        # Use the selection from the quickbarListCtrl to remove items.
         numItemRows = list(range(len(quickbarList)))
 
         # Get current selection from quickbarList ctrl
@@ -642,7 +573,7 @@ class MainWindow(wx.Frame):
 
             if numMats != []:
                 for x in numMats:
-                    #materialDict = {materialId: materialsList[index], 34: 0, 35: 1, ...}
+                    # materialDict = {materialId: materialsList[index], 34: 0, 35: 1, ...}
                     materialDict[materialsList[x].materialID] = x
 
             #print(materialDict)
