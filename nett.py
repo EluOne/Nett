@@ -58,7 +58,7 @@ class MainWindow(wx.Frame):
         # List and Dictionary initialisation.
         if itemList == []:  # Build a list of all items from the static data dump.
             try:
-                con = lite.connect('static.db')  # Currently the full dump that I haven't uploaded. (325mb)
+                con = lite.connect('static.db')  # A cut down version of the CCP dump converted to sqlite. (~8mb)
                 con.text_factory = str
 
                 with con:
@@ -104,7 +104,7 @@ class MainWindow(wx.Frame):
 
         self.leftNotebook = wx.Notebook(self, wx.ID_ANY, style=0)
         self.marketNotebookPane = wx.Panel(self.leftNotebook, wx.ID_ANY)
-        self.searchTextCtrl = wx.TextCtrl(self.marketNotebookPane, wx.ID_ANY, "Search Not Available")
+        self.searchTextCtrl = wx.TextCtrl(self.marketNotebookPane, wx.ID_ANY, "")
         self.searchButton = wx.Button(self.marketNotebookPane, wx.ID_FIND, (""))
         self.marketTree = wx.TreeCtrl(self.marketNotebookPane, wx.ID_ANY, style=wx.TR_HAS_BUTTONS | wx.TR_DEFAULT_STYLE | wx.SUNKEN_BORDER)
         self.addButton = wx.Button(self.marketNotebookPane, wx.ID_ANY, ("Add to Quickbar"))
@@ -150,6 +150,8 @@ class MainWindow(wx.Frame):
 
         self.Bind(wx.EVT_BUTTON, self.onAdd, self.addButton)
         self.Bind(wx.EVT_BUTTON, self.onRemove, self.removeButton)
+
+        self.Bind(wx.EVT_BUTTON, self.searchTree, self.searchButton)
 
         # register the self.onExpand function to be called
         wx.EVT_TREE_ITEM_EXPANDING(self.marketTree, self.marketTree.GetId(), self.onExpand)
@@ -224,6 +226,64 @@ class MainWindow(wx.Frame):
         # If we've loaded up a cache file send the data to the UI.
         if quickbarList != []:
             self.quickbarListCtrl.SetObjects(quickbarList)
+
+    def searchTree(self, event):
+        searchText = self.searchTextCtrl.GetValue()
+
+        # Reset the itemList and marketRelations
+        del itemList[:]
+        marketRelations.clear()
+
+        itemMarketGroups = []
+
+        # List and Dictionary initialisation.
+        if itemList == []:  # Build a list of all items from the static data dump.
+            try:
+                con = lite.connect('static.db')  # A cut down version of the CCP dump converted to sqlite. (~8mb)
+                con.text_factory = str
+
+                with con:
+                    cur = con.cursor()
+                    # With this query we are looking to populate the itemID's with their respective names and parent market groups.
+                    # Eve items currently go up to ID 33612, then Dust items start from 350916
+                    statement = "SELECT typeID, typeName, marketGroupID FROM invtypes WHERE marketGroupID >= 0 AND typeName LIKE '%" + searchText + "%' ORDER BY typeName;"
+                    cur.execute(statement)
+
+                    rows = cur.fetchall()
+
+                    for row in rows:
+                        # The data above taken from the db then all zeros for the buy/sell values (x16), query time and widget key.
+                        itemList.append(Item(int(row[0]), str(row[1]), int(row[2]), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+                        itemMarketGroups.append(int(row[2]))
+
+                    # Iterate over the relations to build all the relavent branches.
+                    while itemMarketGroups != []:
+                        # This statement is for the branches of the market treeCtrl using all the market groups and their relationship to each other.
+                        itemMarketList = ("', '".join(map(str, itemMarketGroups[:])))
+                        relationStatement = ("SELECT marketGroupID, parentGroupID FROM invMarketGroups WHERE marketGroupID IN ('%s') ORDER BY parentGroupID;" % itemMarketList)
+                        cur.execute(relationStatement)
+
+                        relationRows = cur.fetchall()
+
+                        itemMarketGroups = []
+
+                        for row in relationRows:
+                            if row[1]:
+                                marketRelations.update({int(row[0]): int(row[1])})
+                                itemMarketGroups.append(int(row[1]))
+                            else:
+                                marketRelations.update({int(row[0]): 'Market'})
+
+            except lite.Error as err:
+                error = ('SQL Lite Error: ' + repr(err.args[0]) + repr(err.args[1:]))  # Error String
+                onError(error)
+            finally:
+                if con:
+                    con.close()
+
+        # Reinitialize the marketTree
+        self.marketTree.DeleteAllItems()
+        self.buildTree('Market')
 
     def onExpand(self, event):
         '''onExpand is called when the user expands a node on the tree
