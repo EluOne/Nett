@@ -32,7 +32,7 @@ def onError(error):
     dlg = wx.MessageDialog(None, 'An error has occurred:\n' + error, '', wx.OK | wx.ICON_ERROR)
     dlg.ShowModal()  # Show it
     dlg.Destroy()  # finally destroy it when finished.
-    #print('An error has occurred:\n' + error, '\n')
+    # print('An error has occurred:\n' + error, '\n')
 
 
 def reprocess(itemID):  # Takes a list of IDs to query the local db or api server.
@@ -100,7 +100,7 @@ def fetchItems(typeIDs):
                 # Item prices by system url:
                 baseUrl = 'http://api.eve-central.com/api/marketstat?typeid=%s&usesystem=%s'
                 apiURL = baseUrl % (idList[x], system)
-                #print(apiURL)
+                # print(apiURL)
 
                 try:  # Try to connect to the API server
                     downloadedData = requests.get(apiURL, headers=config.headers)

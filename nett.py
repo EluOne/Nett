@@ -298,7 +298,7 @@ class MainWindow(wx.Frame):
 
         # only build that marketTree if not previously expanded
         old_pydata = self.marketTree.GetPyData(itemID)
-        if old_pydata[1] == False:
+        if old_pydata[1] is False:
             # clean the subtree and rebuild it
             self.marketTree.DeleteChildren(itemID)
             self.extendTree(itemID)
@@ -394,7 +394,7 @@ class MainWindow(wx.Frame):
         itemHekLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Hek"), name="itemHek_%s" % moduleID)
         itemJitaLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Jita"), name="itemJita_%s" % moduleID)
         itemSellLabel_1 = wx.StaticText(self.rightPanel, wx.ID_ANY, ("Sell"), name="itemSell_%s" % moduleID)
-        #itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
+        # itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, wx.ID_ANY, "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
         itemAmarrSell_1 = wx.TextCtrl(self.rightPanel, int('101%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="amarrItemSell_%s" % moduleID)
         itemDodiSell_1 = wx.TextCtrl(self.rightPanel, int('102%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="dodixieItemSell_%s" % moduleID)
         itemHekSell_1 = wx.TextCtrl(self.rightPanel, int('103%s' % widgetKey), "", size=(130, 21), style=wx.TE_RIGHT, name="hekItemSell_%s" % moduleID)
@@ -471,10 +471,8 @@ class MainWindow(wx.Frame):
         if child:
             parent = child.GetContainingSizer()
 
-            widgetIds = [
-                 '101', '102', '103', '104', '105', '106', '107', '108',
-                 '201', '202', '203', '204', '205', '206', '207', '208'
-                 ]
+            widgetIds = ['101', '102', '103', '104', '105', '106', '107', '108',
+                         '201', '202', '203', '204', '205', '206', '207', '208']
             for wid in widgetIds:
                 widget = wx.FindWindowById(int('%s%s' % (wid, widgetKey)))
                 if widget:
@@ -502,7 +500,7 @@ class MainWindow(wx.Frame):
         pydata = self.marketTree.GetPyData(currentSelection)
 
         # Check its an item not a market group
-        if pydata[2] == True:
+        if pydata[2] is True:
             selectedID = pydata[0]
             for item in itemList:
                 # Find the selected ID in the complete item list
@@ -590,8 +588,8 @@ class MainWindow(wx.Frame):
                 for mineral in config.mineralIDs:
                     idList.append(mineral)
 
-            #print(idList)
-            #idList = [4473, 16437...]
+            # print(idList)
+            # idList = [4473, 16437...]
 
             # This is for time stamping our out bound queries so we don't request data we already have that is recent.
             queryTime = datetime.datetime.utcnow().replace(microsecond=0)
@@ -623,9 +621,9 @@ class MainWindow(wx.Frame):
                         materialsList[materialDict[mineral]].jitaSell = jitaSell[mineral]
                     else:
                         materialsList.append(Material(int(mineral), config.mineralIDs[mineral],
-                                              amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
-                                              amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
-                                              queryTime))
+                                                      amarrBuy[mineral], dodixieBuy[mineral], hekBuy[mineral], jitaBuy[mineral],
+                                                      amarrSell[mineral], dodixieSell[mineral], hekSell[mineral], jitaSell[mineral],
+                                                      queryTime))
 
             # Once we have fetched material data its now stored in objects in materialsList
             # So we need to make a quick dictionary like a primary key to match list positions to mineral ids.
@@ -636,7 +634,7 @@ class MainWindow(wx.Frame):
                     # materialDict = {materialId: materialsList[index], 34: 0, 35: 1, ...}
                     materialDict[materialsList[x].materialID] = x
 
-            #print(materialDict)
+            # print(materialDict)
 
             # TODO: Move this loop somewhere more logical.
             materialRows = []
@@ -656,7 +654,7 @@ class MainWindow(wx.Frame):
             for item in quickbarList:
                 if item.itemID in idList:
                     output = reprocess(item.itemID)
-                    #print(output)
+                    # print(output)
 
                     reproAmarrBuy = 0  # Fullfilling Buy orders
                     reproAmarrSell = 0  # Placing Sell orders
@@ -730,17 +728,17 @@ class MainWindow(wx.Frame):
                          reproAmarrBuy, reproDodixieBuy, reproHekBuy, reproJitaBuy,
                          reproAmarrSell, reproDodixieSell, reproHekSell, reproJitaSell)"""
                 columns = ('Item Name', 'Amarr Market Buy Orders', 'Amarr Market Sell Orders', 'Amarr Material Buy Orders', 'Amarr Material Sell Orders',
-                              'Dodixie Market Buy Orders', 'Dodixie Market Sell Orders', 'Dodixie Material Buy Orders', 'Dodixie Material Sell Orders',
-                              'Hek Market Buy Orders', 'Hek Market Sell Orders', 'Hek Material Buy Orders', 'Hek Material Sell Orders',
-                              'Jita Market Buy Orders', 'Jita Market Sell Orders', 'Jita Material Buy Orders', 'Jita Material Sell Orders')
+                           'Dodixie Market Buy Orders', 'Dodixie Market Sell Orders', 'Dodixie Material Buy Orders', 'Dodixie Material Sell Orders',
+                           'Hek Market Buy Orders', 'Hek Market Sell Orders', 'Hek Material Buy Orders', 'Hek Material Sell Orders',
+                           'Jita Market Buy Orders', 'Jita Market Sell Orders', 'Jita Material Buy Orders', 'Jita Material Sell Orders')
 
                 dataExport = ('%s%s' % (','.join(columns), '\n'))
                 for row in quickbarList:
                     dataExport = ('%s%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' % (dataExport, row.itemName,
-                                                             row.amarrItemBuy, row.amarrItemSell, row.reproAmarrBuy, row.reproAmarrSell,
-                                                             row.dodixieItemBuy, row.dodixieItemSell, row.reproDodixieBuy, row.reproDodixieSell,
-                                                             row.hekItemBuy, row.hekItemSell, row.reproHekBuy, row.reproHekSell,
-                                                             row.jitaItemBuy, row.jitaItemSell, row.reproJitaBuy, row.reproJitaSell))
+                                                                                              row.amarrItemBuy, row.amarrItemSell, row.reproAmarrBuy, row.reproAmarrSell,
+                                                                                              row.dodixieItemBuy, row.dodixieItemSell, row.reproDodixieBuy, row.reproDodixieSell,
+                                                                                              row.hekItemBuy, row.hekItemSell, row.reproHekBuy, row.reproHekSell,
+                                                                                              row.jitaItemBuy, row.jitaItemSell, row.reproJitaBuy, row.reproJitaSell))
                 f.write(dataExport)
                 f.close()
             dlg.Destroy()
@@ -773,17 +771,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>."""
 
         info = wx.AboutDialogInfo()
 
-        #info.SetIcon(wx.Icon('', wx.BITMAP_TYPE_PNG))
+        # info.SetIcon(wx.Icon('', wx.BITMAP_TYPE_PNG))
         info.SetName('Nova Echo Trade Tool')
         info.SetVersion(config.version)
         info.SetDescription(description)
-        #info.SetCopyright('(C) 2013 Tim Cumming')
+        # info.SetCopyright('(C) 2013 Tim Cumming')
         info.SetWebSite('https://github.com/EluOne/Nett')
         info.SetLicence(licence)
         info.AddDeveloper('Tim Cumming aka Elusive One')
-        #info.AddDocWriter('')
-        #info.AddArtist('')
-        #info.AddTranslator('')
+        # info.AddDocWriter('')
+        # info.AddArtist('')
+        # info.AddTranslator('')
 
         wx.AboutBox(info)
 
